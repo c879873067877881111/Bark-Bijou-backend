@@ -176,6 +176,17 @@ CREATE TABLE email_verification (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 創建refresh_tokens
+CREATE TABLE refresh_tokens (
+  id SERIAL PRIMARY KEY,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  user_id INTEGER NOT NULL REFERENCES member(id),
+  expiry_date TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  revoked BOOLEAN DEFAULT FALSE
+);
+
 -- 創建優惠券表
 CREATE TABLE coupons (
   id SERIAL PRIMARY KEY,
@@ -346,9 +357,9 @@ ALTER TABLE member ADD CONSTRAINT fk_member_vip FOREIGN KEY (vip_levels_id) REFE
 -- VIP等級數據
 INSERT INTO vip_levels (name, minimum_points, discount_percentage, benefits) VALUES 
 ('Bronze', 0, 0, '基礎會員'),
-('Silver', 1000, 5, '5%折扣，生日優惠'),
-('Gold', 5000, 10, '10%折扣，免運費，優先客服'),
-('Platinum', 15000, 15, '15%折扣，專屬優惠，VIP活動');
+('Silver', 1000, 5, '5%折扣,生日優惠'),
+('Gold', 5000, 10, '10%折扣,免運費,優先客服'),
+('Platinum', 15000, 15, '15%折扣,專屬優惠,VIP活動');
 
 -- 訂單狀態數據
 INSERT INTO order_status (name, description, color, sort_order) VALUES 
@@ -385,11 +396,11 @@ INSERT INTO category (name, description, image_url) VALUES
 
 -- 商品數據
 INSERT INTO product (name, description, price, sale_price, sku, stock_quantity, brand_id, category_id, weight) VALUES 
-('高級狗糧 2kg', '營養均衡的高品質狗糧，適合成犬', 899.00, 799.00, 'DOG-FOOD-001', 50, 3, 1, 2.0),
-('貓咪互動玩具', '智能互動球，讓貓咪自己玩耍', 299.00, NULL, 'CAT-TOY-001', 30, 4, 2, 0.2),
-('寵物洗毛精', '溫和配方，適合敏感肌膚', 199.00, 179.00, 'PET-SHAMPOO-001', 25, 1, 3, 0.5),
-('狗狗雨衣', '防水透氣，多種尺寸', 399.00, NULL, 'DOG-CLOTH-001', 15, 2, 4, 0.3),
-('維生素補充劑', '增強免疫力，天然成分', 599.00, 549.00, 'PET-VIT-001', 40, 5, 5, 0.1);
+('高級狗糧 2kg', '營養均衡的高品質狗糧,適合成犬', 899.00, 799.00, 'DOG-FOOD-001', 50, 3, 1, 2.0),
+('貓咪互動玩具', '智能互動球,讓貓咪自己玩耍', 299.00, NULL, 'CAT-TOY-001', 30, 4, 2, 0.2),
+('寵物洗毛精', '溫和配方,適合敏感肌膚', 199.00, 179.00, 'PET-SHAMPOO-001', 25, 1, 3, 0.5),
+('狗狗雨衣', '防水透氣,多種尺寸', 399.00, NULL, 'DOG-CLOTH-001', 15, 2, 4, 0.3),
+('維生素補充劑', '增強免疫力,天然成分', 599.00, 549.00, 'PET-VIT-001', 40, 5, 5, 0.1);
 
 -- 商品圖片數據
 INSERT INTO product_images (product_id, image_url, alt_text, is_primary, sort_order) VALUES 
