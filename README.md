@@ -8,19 +8,19 @@
 - **後端框架**: Spring Boot 3.5.7 (Java 21)
 - **數據持久化**: MyBatis 3.0.3 + PostgreSQL 15
 - **緩存**: Redis 7
-- **安全認證**: Spring Security + JWT (雙 Token 架構)
+- **安全認證**: Spring Security + JWT
 - **API 文檔**: OpenAPI 3 + Swagger UI
-- **日誌系統**: Logback + JSON 格式 (ELK 友好)
+- **日誌系統**: Logback + JSON 格式
 - **容器化**: Docker Compose
 
 ### 系統特性
-- ✅ **RESTful API 設計** - 遵循 REST 架構風格
-- ✅ **JWT 雙 Token 認證** - Access Token + Refresh Token 自動刷新
-- ✅ **完整的電商功能** - 商品、分類、品牌、購物車、訂單管理
-- ✅ **多環境支持** - 開發/測試/生產環境分離
-- ✅ **結構化日誌** - ELK Stack 友好的日誌格式
-- ✅ **CORS 支持** - 前端跨域請求配置
-- ✅ **API 文檔自動生成** - 完整的 Swagger 註解
+-  **RESTful API 設計** - 遵循 REST 架構風格
+-  **JWT Token 認證** - Access Token + Refresh Token 自動刷新
+-  **完整的電商功能** - 商品、分類、品牌、購物車、訂單管理
+-  **多環境支持** - 開發/測試/生產環境分離
+-  **結構化日誌** - ELK Stack 的日誌格式
+-  **CORS 支持** - 前端跨域請求配置
+-  **API 文檔自動生成** - 完整的 Swagger 註解
 
 ## 快速開始
 
@@ -29,7 +29,7 @@
 - Docker & Docker Compose
 - Maven 3.6+
 
-### 1. 克隆項目
+### 1. Clone項目
 ```bash
 git clone <repository-url>
 cd api-server
@@ -157,7 +157,7 @@ src/main/java/com/smallnine/apiserver/
 ```
 
 ### 編碼規範
-1. **日誌格式**: 使用 ELK 友好的結構化格式 (參考 `LOGGING_STANDARDS.md`)
+1. **日誌格式**: 使用 ELK 的結構化格式 (參考 `LOGGING_STANDARDS.md`)
 2. **異常處理**: 統一使用 `GlobalExceptionHandler` 處理
 3. **API 設計**: RESTful 風格，統一使用 `ApiResponse<T>` 包裝
 4. **事務管理**: Service 層使用 `@Transactional` 註解
@@ -237,10 +237,5 @@ grep "ERROR" logs/api-server.log
 
 ## 相關文檔
 - [JWT 刷新機制前端整合](./REFRESH_TOKEN.md)
-- [ELK 友好日誌規範](./LOGGING_STANDARDS.md)
+- [ELK 日誌規範](./LOGGING_STANDARDS.md)
 - [API 詳細文檔](http://localhost:8080/swagger-ui.html)
-
-## 聯絡信息
-- **開發團隊**: SmallNine Team
-- **項目維護**: [GitHub Issues](./issues)
-- **技術支持**: 請參考 API 文檔和日誌進行故障排除
