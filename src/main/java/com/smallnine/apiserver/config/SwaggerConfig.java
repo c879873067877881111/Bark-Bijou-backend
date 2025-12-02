@@ -48,7 +48,7 @@ public class SwaggerConfig {
                 ))
                 .externalDocs(new ExternalDocumentation()
                         .description("專案網址")
-                        .url("https://github.com/SmallNine/填入網址"))
+                        .url("https://github.com/c879873067877881111/Bark-Bijou-backend/tree/main"))
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH))
                 .components(new Components()
                         .addSecuritySchemes(BEARER_AUTH,

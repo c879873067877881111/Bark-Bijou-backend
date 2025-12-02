@@ -30,4 +30,12 @@ public class SwaggerUIController {
     public RedirectView docs() {
         return new RedirectView("/swagger-ui/index.html");
     }
+
+    /**
+     * 新增路徑 /api/docs 到 Swagger UI
+     */
+    @GetMapping("/api/docs")
+    public RedirectView apiDocsPath() {
+        return new RedirectView("/swagger-ui/index.html");
+    }
 }
