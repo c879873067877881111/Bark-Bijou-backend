@@ -41,9 +41,9 @@ docker-compose up -d
 - RESTful API 設計
 
 ## 文檔
-- [📚 API 文檔](docs/api.md) - 詳細的 API 端點說明
-- [🚀 部署指南](docs/deployment.md) - Docker/雲端部署配置  
-- [⚙️ 開發指南](docs/development.md) - 本地開發和編碼規範
+- [API 文檔](docs/api.md) - 詳細的 API 端點說明
+- [部署指南](docs/deployment.md) - Docker/雲端部署配置  
+- [開發指南](docs/development.md) - 本地開發和編碼規範
 
 ## 相關文檔
 - [JWT Token 機制](REFRESH_TOKEN.md)
