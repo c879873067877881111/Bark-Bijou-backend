@@ -18,7 +18,7 @@
 ### 啟動步驟
 ```bash
 # 1. Clone 專案
-git clone <repository-url>
+git clone https://github.com/c879873067877881111/Bark-Bijou-backend.git
 cd api-server
 
 # 2. 啟動資料庫服務
