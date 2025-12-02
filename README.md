@@ -1,14 +1,14 @@
 # Bark Bijou 電商 API 服務
 
-基於 Spring Boot 3.5.7 + PostgreSQL + Redis 的現代化電商 API 系統
+Spring Boot 3.5.7 + PostgreSQL + Redis 的電商 API 網站
 
 ## 技術棧
 - **後端**: Spring Boot 3.5.7 (Java 21) + MyBatis
 - **資料庫**: PostgreSQL 15 + Redis 7  
 - **認證**: Spring Security + JWT
-- **文檔**: OpenAPI 3 + Swagger UI
+- **文件檔案**: OpenAPI 3 + Swagger UI
 
-## 快速啟動
+## 啟動
 
 ### 環境要求
 - Java 21+
@@ -18,7 +18,7 @@
 ### 啟動步驟
 ```bash
 # 1. Clone 專案
-git clone <repository-url>
+git clone https://github.com/c879873067877881111/Bark-Bijou-backend.git
 cd api-server
 
 # 2. 啟動資料庫服務
@@ -28,7 +28,7 @@ docker-compose up -d
 ./mvnw spring-boot:run
 ```
 
-### 訪問地址
+### 網址
 - **API 服務**: http://localhost:8080/api
 - **API 文檔**: http://localhost:8080/swagger-ui.html  
 - **健康檢查**: http://localhost:8080/actuator/health
@@ -41,9 +41,9 @@ docker-compose up -d
 - RESTful API 設計
 
 ## 文檔
-- [📚 API 文檔](docs/api.md) - 詳細的 API 端點說明
-- [🚀 部署指南](docs/deployment.md) - Docker/雲端部署配置  
-- [⚙️ 開發指南](docs/development.md) - 本地開發和編碼規範
+- [API 文件檔案](docs/api.md) - 詳細的 API 說明
+- [部署指南](docs/deployment.md) - Docker/雲端部署配置  
+- [開發指南](docs/development.md) - 本地開發和程式碼規範
 
 ## 相關文檔
 - [JWT Token 機制](REFRESH_TOKEN.md)

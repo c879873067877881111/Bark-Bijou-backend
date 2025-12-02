@@ -1,12 +1,12 @@
-# ELK 友好日誌結構化標準
+# ELK 結構化日誌
 
 ## 核心原則
-1. **統一格式**:所有日誌使用 `key=value` 結構
+1. **格式統一**:所有日誌使用 `key=value` 結構
 2. **必要標籤**:每條日誌必須包含 `action` 和 `result`
 3. **量化數據**:記錄可聚合的數值(時間、計數、大小)
 4. **上下文資訊**:善用 MDC 提供的追蹤信息
 
-## 標準字段定義
+## 字段定義
 
 ### 必要字段
 - `action=` 操作類型(login, register, logout, refresh_token, etc.)
@@ -26,7 +26,7 @@
 - `token_expires=` Token 到期時間
 - `count=` 計數
 
-### 安全字段
+### 安全性字段
 - `client_ip=` 客戶端IP(通過 MDC 獲取)
 - `trace_id=` 請求追蹤ID(通過 MDC 獲取)
 
@@ -95,6 +95,6 @@ log.info("action=payment user_id={} order_id={} amount={} duration_ms={} result=
 - 異常用戶:同一 IP 在短時間內的失敗嘗試次數
 
 ## 注意事項
-1. **敏感資訊**:絕不記錄密碼、Token 內容等敏感信息
+1. **敏感資訊**:絕對不記錄密碼、Token 內容等敏感信息
 2. **性能考量**:避免在高頻操作中記錄過多詳細信息
-3. **統一術語**:團隊內統一 `action` 和 `reason` 的命名規範
+3. **術語統一**:團隊內統一 `action` 和 `reason` 的命名規範
