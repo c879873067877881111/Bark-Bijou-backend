@@ -11,14 +11,13 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
-// TODO: 先與前端串接後，再加入RBAC功能
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class User implements UserDetails {
-    
+
     private Long id;
+    private Role role = Role.USER;
     private String username;
     private String realname;
     private String email;
@@ -44,7 +43,8 @@ public class User implements UserDetails {
     // UserDetails implementation
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        String roleName = (role != null) ? role.name() : Role.USER.name();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + roleName));
     }
     
     @Override

@@ -27,6 +27,7 @@ CREATE TABLE article (
 -- 創建member表
 CREATE TABLE member (
   id SERIAL PRIMARY KEY,
+  role VARCHAR(20) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'SITTER')),
   username VARCHAR(255) NOT NULL UNIQUE,
   realname VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
@@ -412,9 +413,9 @@ INSERT INTO product_images (product_id, image_url, alt_text, is_primary, sort_or
 (5, '/images/products/vitamin-1.jpg', '維生素補充劑', TRUE, 1);
 
 -- 插入測試用戶 (密碼: password123)
-INSERT INTO member (username, realname, email, password, phone, gender, email_validated, vip_levels_id) VALUES 
-('testuser', '測試用戶', 'test@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '0912345678', 'male', TRUE, 1),
-('admin', '系統管理員', 'admin@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '0987654321', 'female', TRUE, 4);
+INSERT INTO member (role, username, realname, email, password, phone, gender, email_validated, vip_levels_id) VALUES
+('USER', 'testuser', '測試用戶', 'test@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '0912345678', 'male', TRUE, 1),
+('ADMIN', 'admin', '系統管理員', 'admin@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '0987654321', 'female', TRUE, 4);
 
 -- 創建索引
 CREATE INDEX idx_product_category ON product(category_id);

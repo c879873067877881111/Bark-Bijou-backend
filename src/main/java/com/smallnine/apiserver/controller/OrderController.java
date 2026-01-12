@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 @Tag(name = "訂單管理", description = "訂單相關 API - 創建、查詢、更新、取消訂單")
 @Slf4j
 @SecurityRequirement(name = "bearerAuth")
@@ -226,6 +226,7 @@ public class OrderController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "訂單不存在"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
     })
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{orderId}/status")
     public ResponseEntity<ApiResponse<Void>> updateOrderStatus(
             @PathVariable Long orderId,
@@ -293,6 +294,7 @@ public class OrderController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "訂單不存在"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
     })
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{orderId}")
     public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable Long orderId) {
         try {

@@ -22,7 +22,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 @Tag(name = "商品管理", description = "商品相關 API - 查詢、創建、更新、刪除商品")
 @Slf4j
 public class ProductController {

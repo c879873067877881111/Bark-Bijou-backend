@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
  */
 @RestController
 @RequestMapping("/api/log-test")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 @Tag(name = "日誌測試", description = "測試各種日誌功能")
 @Slf4j
 public class LogTestController {

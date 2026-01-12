@@ -2,8 +2,11 @@ package com.smallnine.apiserver.service.impl;
 
 import com.smallnine.apiserver.dto.*;
 import com.smallnine.apiserver.entity.RefreshToken;
-import com.smallnine.apiserver.service.RefreshTokenService;
 import com.smallnine.apiserver.entity.User;
+import com.smallnine.apiserver.exception.AccountDisabledException;
+import com.smallnine.apiserver.exception.DuplicateResourceException;
+import com.smallnine.apiserver.exception.ResourceNotFoundException;
+import com.smallnine.apiserver.service.RefreshTokenService;
 import com.smallnine.apiserver.dao.UserDao;
 import com.smallnine.apiserver.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -32,15 +35,15 @@ public class AuthServiceImpl {
                 request.getUsername(), request.getEmail());
         
         if (userDao.existsByUsername(request.getUsername())) {
-            log.warn("action=register username={} result=failed reason=username_exists", 
+            log.warn("action=register username={} result=failed reason=username_exists",
                     request.getUsername());
-            throw new RuntimeException("用戶名已存在: " + request.getUsername());
+            throw new DuplicateResourceException("用戶", "username", request.getUsername());
         }
-        
+
         if (userDao.existsByEmail(request.getEmail())) {
-            log.warn("action=register email={} result=failed reason=email_exists", 
+            log.warn("action=register email={} result=failed reason=email_exists",
                     request.getEmail());
-            throw new RuntimeException("信箱已存在: " + request.getEmail());
+            throw new DuplicateResourceException("用戶", "email", request.getEmail());
         }
         
         User user = new User();
@@ -70,9 +73,9 @@ public class AuthServiceImpl {
                 });
         
         if (!user.isEnabled()) {
-            log.warn("action=login username={} user_id={} result=failed reason=account_disabled", 
+            log.warn("action=login username={} user_id={} result=failed reason=account_disabled",
                     user.getUsername(), user.getId());
-            throw new RuntimeException("帳號已被停用或信箱未驗證");
+            throw new AccountDisabledException();
         }
         
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
@@ -106,7 +109,7 @@ public class AuthServiceImpl {
                 .map(RefreshToken::getUserId)
                 .map(userId -> {
                     User user = userDao.findById(userId)
-                            .orElseThrow(() -> new RuntimeException("找不到用戶"));
+                            .orElseThrow(() -> new ResourceNotFoundException("用戶", userId));
                     
                     String newAccessToken = jwtUtil.generateAccessToken(user.getUsername());
                     RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);

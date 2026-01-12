@@ -21,7 +21,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 @Tag(name = "分類管理", description = "商品分類相關 API - 查詢、創建、更新、刪除分類")
 @Slf4j
 public class CategoryController {

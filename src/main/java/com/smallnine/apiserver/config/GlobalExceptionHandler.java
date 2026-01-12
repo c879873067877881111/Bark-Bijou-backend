@@ -2,7 +2,10 @@ package com.smallnine.apiserver.config;
 
 import com.smallnine.apiserver.constants.enums.ResponseCode;
 import com.smallnine.apiserver.dto.ApiResponse;
+import com.smallnine.apiserver.exception.AccountDisabledException;
 import com.smallnine.apiserver.exception.BusinessException;
+import com.smallnine.apiserver.exception.DuplicateResourceException;
+import com.smallnine.apiserver.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -28,11 +31,37 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(
             BusinessException ex, WebRequest request) {
-        
+
         log.warn("業務異常: {}, 請求: {}", ex.getMessage(), request.getDescription(false));
-        
+
         ApiResponse<Void> response = ApiResponse.error(ex.getCode(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * 資源不存在異常處理
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(
+            ResourceNotFoundException ex, WebRequest request) {
+
+        log.warn("資源不存在: {}, 請求: {}", ex.getMessage(), request.getDescription(false));
+
+        ApiResponse<Void> response = ApiResponse.error(ResponseCode.NOT_FOUND.getCode(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * 資源重複異常處理
+     */
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateResourceException(
+            DuplicateResourceException ex, WebRequest request) {
+
+        log.warn("資源重複: {}, 請求: {}", ex.getMessage(), request.getDescription(false));
+
+        ApiResponse<Void> response = ApiResponse.error(ResponseCode.BAD_REQUEST.getCode(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
     
     /**
@@ -81,15 +110,28 @@ public class GlobalExceptionHandler {
     }
     
     /**
+     * 帳號停用異常處理
+     */
+    @ExceptionHandler(AccountDisabledException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccountDisabledException(
+            AccountDisabledException ex, WebRequest request) {
+
+        log.warn("帳號停用: {}, 請求: {}", ex.getMessage(), request.getDescription(false));
+
+        ApiResponse<Void> response = ApiResponse.error(ResponseCode.FORBIDDEN.getCode(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    /**
      * 認證異常處理
      */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<Void>> handleAuthenticationException(
             AuthenticationException ex, WebRequest request) {
-        
+
         log.warn("認證失敗: {}, 請求: {}", ex.getMessage(), request.getDescription(false));
-        
-        ApiResponse<Void> response = ApiResponse.error(ResponseCode.UNAUTHORIZED);
+
+        ApiResponse<Void> response = ApiResponse.error(ResponseCode.UNAUTHORIZED.getCode(), "用戶名或密碼錯誤");
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
     

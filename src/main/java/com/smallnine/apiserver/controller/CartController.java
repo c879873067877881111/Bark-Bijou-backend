@@ -24,7 +24,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 @Tag(name = "購物車管理", description = "購物車相關 API - 添加、移除、更新購物車項目")
 @Slf4j
 @SecurityRequirement(name = "bearerAuth")

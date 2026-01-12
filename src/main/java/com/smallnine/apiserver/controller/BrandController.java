@@ -21,7 +21,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/brands")
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 @Tag(name = "品牌管理", description = "品牌相關 API - 查詢、創建、更新、刪除品牌")
 @Slf4j
 public class BrandController {

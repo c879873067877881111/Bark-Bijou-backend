@@ -5,6 +5,7 @@
 
     <resultMap id="UserResultMap" type="com.smallnine.apiserver.entity.User">
         <id property="id" column="id" />
+        <result property="role" column="role" />
         <result property="username" column="username" />
         <result property="realname" column="realname" />
         <result property="email" column="email" />
@@ -29,7 +30,7 @@
     </resultMap>
 
     <sql id="BaseColumns">
-        id, username, email, password, realname, phone, gender, 
+        id, role, username, email, password, realname, phone, gender,
         vip_levels_id, image_url, email_validated, created_at, updated_at
     </sql>
 
@@ -78,10 +79,10 @@
     <!-- 創建用戶 -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO member (
-            username, email, password, realname, phone, gender,
+            role, username, email, password, realname, phone, gender,
             vip_levels_id, image_url, email_validated, created_at, updated_at
         ) VALUES (
-            #{username}, #{email}, #{password}, #{realname}, #{phone}, #{gender},
+            #{role}, #{username}, #{email}, #{password}, #{realname}, #{phone}, #{gender},
             #{vipLevelsId}, #{imageUrl}, #{emailValidated}, NOW(), NOW()
         )
     </insert>
