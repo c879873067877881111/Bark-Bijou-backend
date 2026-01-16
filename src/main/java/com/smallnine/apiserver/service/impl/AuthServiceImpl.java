@@ -6,6 +6,8 @@ import com.smallnine.apiserver.entity.User;
 import com.smallnine.apiserver.exception.AccountDisabledException;
 import com.smallnine.apiserver.exception.DuplicateResourceException;
 import com.smallnine.apiserver.exception.ResourceNotFoundException;
+import com.smallnine.apiserver.logging.AuditLogger;
+import com.smallnine.apiserver.logging.LogContext;
 import com.smallnine.apiserver.service.RefreshTokenService;
 import com.smallnine.apiserver.dao.UserDao;
 import com.smallnine.apiserver.utils.JwtUtil;
@@ -23,11 +25,12 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Slf4j
 public class AuthServiceImpl {
-    
+
     private final UserDao userDao;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
+    private final AuditLogger auditLogger;
     
     @Transactional
     public UserResponse register(RegisterRequest request) {
@@ -63,33 +66,35 @@ public class AuthServiceImpl {
     }
     
     public AuthResponse login(LoginRequest request) {
-        log.info("action=login user={} result=attempt", request.getUsernameOrEmail());
-        
+        log.debug("action=login user={} result=attempt", request.getUsernameOrEmail());
+
         User user = userDao.findByUsernameOrEmail(request.getUsernameOrEmail())
                 .orElseThrow(() -> {
-                    log.warn("action=login user={} result=failed reason=user_not_found", 
-                            request.getUsernameOrEmail());
+                    // 使用審計日誌記錄登入失敗
+                    auditLogger.logLoginFailure(request.getUsernameOrEmail(), "用戶不存在");
                     return new UsernameNotFoundException("用戶名或密碼錯誤");
                 });
-        
+
         if (!user.isEnabled()) {
-            log.warn("action=login username={} user_id={} result=failed reason=account_disabled",
-                    user.getUsername(), user.getId());
+            auditLogger.logLoginFailure(user.getUsername(), "帳號已停用");
             throw new AccountDisabledException();
         }
-        
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.warn("action=login username={} user_id={} result=failed reason=invalid_password", 
-                    user.getUsername(), user.getId());
+            auditLogger.logLoginFailure(user.getUsername(), "密碼錯誤");
             throw new BadCredentialsException("用戶名或密碼錯誤");
         }
-        
+
         String accessToken = jwtUtil.generateAccessToken(user.getUsername());
         RefreshToken refreshTokenEntity = refreshTokenService.createRefreshToken(user);
         LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(jwtUtil.getAccessTokenExpirationTime() / 1000);
-        
-        log.info("action=login username={} user_id={} result=success token_expires={}", 
-                user.getUsername(), user.getId(), expiresAt);
+
+        // 設置用戶上下文（後續日誌會自動帶上 userId）
+        LogContext.setUser(user.getId().toString(), user.getUsername());
+
+        // 記錄登入成功（安全審計日誌）
+        auditLogger.logLoginSuccess(user.getId().toString(), user.getUsername());
+
         return new AuthResponse(accessToken, refreshTokenEntity.getToken(), user, expiresAt);
     }
     

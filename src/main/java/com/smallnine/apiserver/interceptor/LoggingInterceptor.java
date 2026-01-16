@@ -1,15 +1,12 @@
 package com.smallnine.apiserver.interceptor;
 
-import com.smallnine.apiserver.utils.LogUtil;
+import com.smallnine.apiserver.logging.LogContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
-
-import java.util.UUID;
 
 /**
  * 日誌攔截器
@@ -25,34 +22,37 @@ public class LoggingInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         long startTime = System.currentTimeMillis();
         request.setAttribute(START_TIME, startTime);
-        
-        // 設置追蹤ID
-        LogUtil.setTraceId();
-        
+
         // 獲取客戶端IP
         String clientIp = getClientIp(request);
-        
-        // 設置請求信息到MDC
-        LogUtil.setRequestInfo(request.getMethod(), request.getRequestURI(), clientIp);
-        
+
+        // 初始化請求上下文（設置 traceId 和 MDC）
+        String traceId = LogContext.initRequest(request.getMethod(), request.getRequestURI(), clientIp);
+
+        // 檢查是否有外部傳入的 traceId（用於分布式追蹤）
+        String externalTraceId = request.getHeader("X-Trace-Id");
+        if (externalTraceId != null && !externalTraceId.isEmpty()) {
+            LogContext.setTraceId(externalTraceId);
+        }
+
         // 記錄請求開始
-        log.info("請求開始: {} {} - 來源IP: {} - User-Agent: {}", 
-                request.getMethod(), 
+        log.info("action=REQUEST_START method={} uri={} client_ip={} user_agent=\"{}\"",
+                request.getMethod(),
                 request.getRequestURI(),
                 clientIp,
                 request.getHeader("User-Agent"));
-                
-        // 記錄請求參數
+
+        // 記錄請求參數（DEBUG 級別）
         if (log.isDebugEnabled()) {
             StringBuilder params = new StringBuilder();
             request.getParameterMap().forEach((key, values) -> {
                 params.append(key).append("=").append(String.join(",", values)).append(" ");
             });
-            if (params.length() > 0) {
-                log.debug("請求參數: {}", params.toString().trim());
+            if (!params.isEmpty()) {
+                log.debug("request_params={}", params.toString().trim());
             }
         }
-        
+
         return true;
     }
     
@@ -67,30 +67,31 @@ public class LoggingInterceptor implements HandlerInterceptor {
             Long startTime = (Long) request.getAttribute(START_TIME);
             if (startTime != null) {
                 long duration = System.currentTimeMillis() - startTime;
-                
-                // 記錄請求完成
+
+                // 記錄請求完成（結構化格式）
                 String status = ex != null ? "FAILED" : "SUCCESS";
-                log.info("請求完成: {} {} - 狀態: {} - HTTP狀態碼: {} - 耗時: {}ms", 
+                log.info("action=REQUEST_END method={} uri={} status={} http_code={} duration_ms={}",
                         request.getMethod(),
                         request.getRequestURI(),
                         status,
                         response.getStatus(),
                         duration);
-                
+
                 // 記錄異常信息
                 if (ex != null) {
-                    log.error("請求處理異常: {}", ex.getMessage(), ex);
+                    log.error("action=REQUEST_ERROR method={} uri={} error=\"{}\"",
+                            request.getMethod(), request.getRequestURI(), ex.getMessage(), ex);
                 }
-                
-                // 性能監控
+
+                // 性能監控：慢請求警告
                 if (duration > 2000) {
-                    log.warn("慢請求警告: {} {} - 耗時: {}ms", 
+                    log.warn("action=SLOW_REQUEST method={} uri={} duration_ms={}",
                             request.getMethod(), request.getRequestURI(), duration);
                 }
             }
         } finally {
-            // 清除MDC信息
-            LogUtil.clear();
+            // 清除 MDC 信息
+            LogContext.clear();
         }
     }
     

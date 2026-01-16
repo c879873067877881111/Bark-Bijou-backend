@@ -16,57 +16,36 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class ArticleServiceImpl {
-    
+
     private final ArticleDao articleDao;
-    
-    /**
-     * 根據ID查詢文章
-     */
+
     public Article findById(Long id) {
         return articleDao.findById(id)
                 .orElseThrow(() -> new BusinessException(ResponseCode.ARTICLE_NOT_FOUND));
     }
-    
-    /**
-     * 查詢所有文章（分頁）
-     */
+
     public List<Article> findAll(int page, int size) {
         int offset = page * size;
         return articleDao.findAll(offset, size);
     }
-    
-    /**
-     * 根據作者查詢文章
-     */
+
     public List<Article> findByAuthor(String author) {
         return articleDao.findByAuthor(author);
     }
-    
-    /**
-     * 根據分類查詢文章
-     */
+
     public List<Article> findByCategoryName(String categoryName) {
         return articleDao.findByCategoryName(categoryName);
     }
-    
-    /**
-     * 搜索文章
-     */
+
     public List<Article> searchByTitle(String title, int page, int size) {
         int offset = page * size;
         return articleDao.searchByTitle(title, offset, size);
     }
-    
-    /**
-     * 根據成員ID查詢文章
-     */
+
     public List<Article> findByMemberId(Long memberId) {
         return articleDao.findByMemberId(memberId);
     }
-    
-    /**
-     * 創建文章
-     */
+
     @Transactional
     public Article createArticle(Article article) {
         if (article.getCreatedDate() == null) {
@@ -75,57 +54,45 @@ public class ArticleServiceImpl {
         if (article.getValid() == null) {
             article.setValid(1);
         }
-        
+
         int result = articleDao.insert(article);
         if (result == 0) {
             throw new BusinessException(ResponseCode.ARTICLE_CREATE_FAILED);
         }
-        
-        log.info("文章創建成功: id={}, title={}", article.getId(), article.getTitle());
+
+        log.info("action=CREATE_ARTICLE id={} title={}", article.getId(), article.getTitle());
         return article;
     }
-    
-    /**
-     * 更新文章
-     */
+
     @Transactional
     public Article updateArticle(Article article) {
-        Article existingArticle = findById(article.getId());
-        
+        findById(article.getId());
+
         int result = articleDao.update(article);
         if (result == 0) {
             throw new BusinessException(ResponseCode.ARTICLE_UPDATE_FAILED);
         }
-        
-        log.info("文章更新成功: id={}, title={}", article.getId(), article.getTitle());
+
+        log.info("action=UPDATE_ARTICLE id={} title={}", article.getId(), article.getTitle());
         return findById(article.getId());
     }
-    
-    /**
-     * 刪除文章
-     */
+
     @Transactional
     public void deleteArticle(Long id) {
         Article article = findById(id);
-        
+
         int result = articleDao.deleteById(id);
         if (result == 0) {
             throw new BusinessException(ResponseCode.ARTICLE_DELETE_FAILED);
         }
-        
-        log.info("文章刪除成功: id={}, title={}", id, article.getTitle());
+
+        log.info("action=DELETE_ARTICLE id={} title={}", id, article.getTitle());
     }
-    
-    /**
-     * 統計文章總數
-     */
+
     public long count() {
         return articleDao.count();
     }
-    
-    /**
-     * 統計有效文章數量
-     */
+
     public long countValid() {
         return articleDao.countValid();
     }

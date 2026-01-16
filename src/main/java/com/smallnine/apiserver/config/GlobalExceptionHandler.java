@@ -32,10 +32,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(
             BusinessException ex, WebRequest request) {
 
-        log.warn("業務異常: {}, 請求: {}", ex.getMessage(), request.getDescription(false));
+        log.warn("業務異常: code={}, message={}, 請求: {}", ex.getCode(), ex.getMessage(), request.getDescription(false));
 
         ApiResponse<Void> response = ApiResponse.error(ex.getCode(), ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        HttpStatus status = ResponseCode.fromCode(ex.getCode()).getHttpStatus();
+        return new ResponseEntity<>(response, status);
     }
 
     /**
