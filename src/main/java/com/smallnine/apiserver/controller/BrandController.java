@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,198 +21,99 @@ import java.util.List;
 @RequestMapping("/api/brands")
 @RequiredArgsConstructor
 @Tag(name = "品牌管理", description = "品牌相關 API - 查詢、創建、更新、刪除品牌")
-@Slf4j
 public class BrandController {
-    
+
     private final BrandServiceImpl brandService;
-    
+
     @Operation(summary = "獲取所有品牌", description = "分頁獲取品牌列表")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功獲取品牌列表"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
-    })
     @GetMapping
     public ResponseEntity<ApiResponse<List<BrandResponse>>> getAllBrands(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        try {
-            List<BrandResponse> brands = brandService.findAllBrands(page, size);
-            return ResponseEntity.ok(ApiResponse.success(brands));
-        } catch (Exception e) {
-            log.error("獲取品牌列表失敗", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("獲取品牌列表失敗"));
-        }
+        List<BrandResponse> brands = brandService.findAllBrands(page, size);
+        return ResponseEntity.ok(ApiResponse.success(brands));
     }
-    
+
     @Operation(summary = "根據ID獲取品牌", description = "根據品牌ID獲取單個品牌詳情")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功獲取品牌"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "品牌不存在"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "品牌不存在")
     })
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BrandResponse>> getBrandById(@PathVariable Long id) {
-        try {
-            BrandResponse brand = brandService.getBrandResponse(id);
-            return ResponseEntity.ok(ApiResponse.success(brand));
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("不存在")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.fail(e.getMessage()));
-            }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.fail(e.getMessage()));
-        } catch (Exception e) {
-            log.error("獲取品牌失敗: id={}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("獲取品牌失敗"));
-        }
+        BrandResponse brand = brandService.getBrandResponse(id);
+        return ResponseEntity.ok(ApiResponse.success(brand));
     }
-    
+
     @Operation(summary = "搜索品牌", description = "根據品牌名稱搜索品牌")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "搜索成功"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
-    })
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<BrandResponse>>> searchBrands(
             @RequestParam String name,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        try {
-            List<BrandResponse> brands = brandService.searchByName(name, page, size);
-            return ResponseEntity.ok(ApiResponse.success(brands));
-        } catch (Exception e) {
-            log.error("搜索品牌失敗: name={}", name, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("搜索品牌失敗"));
-        }
+        List<BrandResponse> brands = brandService.searchByName(name, page, size);
+        return ResponseEntity.ok(ApiResponse.success(brands));
     }
-    
+
     @Operation(summary = "創建品牌", description = "創建新品牌")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "品牌創建成功"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "請求參數無效"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未授權"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未授權")
     })
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     public ResponseEntity<ApiResponse<Brand>> createBrand(@Valid @RequestBody BrandRequest request) {
-        try {
-            Brand brand = brandService.createBrand(request);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success("品牌創建成功", brand));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.fail(e.getMessage()));
-        } catch (Exception e) {
-            log.error("創建品牌失敗", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("創建品牌失敗"));
-        }
+        Brand brand = brandService.createBrand(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("品牌創建成功", brand));
     }
-    
+
     @Operation(summary = "更新品牌", description = "根據ID更新品牌訊息")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "品牌更新成功"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "請求參數無效"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未授權"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "品牌不存在"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "品牌不存在")
     })
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Brand>> updateBrand(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @Valid @RequestBody BrandRequest request) {
-        try {
-            Brand brand = brandService.updateBrand(id, request);
-            return ResponseEntity.ok(ApiResponse.success("品牌更新成功", brand));
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("不存在")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.fail(e.getMessage()));
-            }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.fail(e.getMessage()));
-        } catch (Exception e) {
-            log.error("更新品牌失敗: id={}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("更新品牌失敗"));
-        }
+        Brand brand = brandService.updateBrand(id, request);
+        return ResponseEntity.ok(ApiResponse.success("品牌更新成功", brand));
     }
-    
+
     @Operation(summary = "刪除品牌", description = "根據ID刪除品牌")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "品牌刪除成功"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未授權"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "品牌不存在"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "品牌不存在")
     })
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteBrand(@PathVariable Long id) {
-        try {
-            brandService.deleteBrand(id);
-            return ResponseEntity.ok(ApiResponse.success("品牌刪除成功"));
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("不存在")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.fail(e.getMessage()));
-            }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.fail(e.getMessage()));
-        } catch (Exception e) {
-            log.error("刪除品牌失敗: id={}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("刪除品牌失敗"));
-        }
+        brandService.deleteBrand(id);
+        return ResponseEntity.ok(ApiResponse.success("品牌刪除成功"));
     }
-    
+
     @Operation(summary = "統計品牌數量", description = "獲取品牌總數")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "統計成功"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
-    })
     @GetMapping("/count")
     public ResponseEntity<ApiResponse<Long>> getBrandCount() {
-        try {
-            long count = brandService.countBrands();
-            return ResponseEntity.ok(ApiResponse.success(count));
-        } catch (Exception e) {
-            log.error("統計品牌數量失敗", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("統計品牌數量失敗"));
-        }
+        long count = brandService.countBrands();
+        return ResponseEntity.ok(ApiResponse.success(count));
     }
-    
+
     @Operation(summary = "統計品牌商品數量", description = "獲取指定品牌下的商品數量")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "統計成功"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "品牌不存在"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "品牌不存在")
     })
     @GetMapping("/{id}/products/count")
     public ResponseEntity<ApiResponse<Long>> getBrandProductCount(@PathVariable Long id) {
-        try {
-            // 先驗證品牌是否存在
-            brandService.findById(id);
-            
-            long count = brandService.countProductsByBrand(id);
-            return ResponseEntity.ok(ApiResponse.success(count));
-        } catch (RuntimeException e) {
-            if (e.getMessage().contains("不存在")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.fail(e.getMessage()));
-            }
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.fail(e.getMessage()));
-        } catch (Exception e) {
-            log.error("統計品牌商品數量失敗: brandId={}", id, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("統計品牌商品數量失敗"));
-        }
+        brandService.findById(id);
+        long count = brandService.countProductsByBrand(id);
+        return ResponseEntity.ok(ApiResponse.success(count));
     }
 }
