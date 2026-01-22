@@ -4,6 +4,7 @@ import com.smallnine.apiserver.dto.*;
 import com.smallnine.apiserver.entity.RefreshToken;
 import com.smallnine.apiserver.entity.User;
 import com.smallnine.apiserver.exception.AccountDisabledException;
+import com.smallnine.apiserver.exception.BusinessException;
 import com.smallnine.apiserver.exception.DuplicateResourceException;
 import com.smallnine.apiserver.exception.ResourceNotFoundException;
 import com.smallnine.apiserver.logging.AuditLogger;
@@ -19,12 +20,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class AuthServiceImpl {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserDao userDao;
     private final PasswordEncoder passwordEncoder;
@@ -56,12 +61,21 @@ public class AuthServiceImpl {
         user.setRealname(request.getRealname());
         user.setPhone(request.getPhone());
         user.setGender(request.getGender() != null ? request.getGender() : User.Gender.male);
-        user.setEmailValidated(true); // 暫時自動驗證,生產環境應該通過郵件驗證
-        
+        user.setEmailValidated(false);
+
+        // 生成郵件驗證令牌
+        String verificationToken = generateSecureToken();
+        user.setResetToken(verificationToken);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(24));
+
         userDao.insert(user);
-        log.info("action=register username={} user_id={} result=success", 
+        log.info("action=register username={} user_id={} result=success",
                 user.getUsername(), user.getId());
-        
+
+        // TODO: 實際發送驗證郵件（需要配置郵件服務）
+        // 目前先記錄驗證連結到日誌，方便開發測試
+        log.info("Email verification link: /api/auth/verify-email?token={}", verificationToken);
+
         return new UserResponse(user);
     }
     
@@ -130,7 +144,7 @@ public class AuthServiceImpl {
                 .orElseThrow(() -> new RuntimeException("更新令牌無效"));
     }
     
-    @Transactional  
+    @Transactional
     public void logout(String refreshToken) {
         if (refreshToken != null) {
             refreshTokenService.revokeByToken(refreshToken);
@@ -138,5 +152,60 @@ public class AuthServiceImpl {
         } else {
             log.warn("action=logout result=failed reason=missing_token");
         }
+    }
+
+    /**
+     * 驗證郵件
+     */
+    @Transactional
+    public void verifyEmail(String token) {
+        log.info("action=verify_email token={} result=attempt", token.substring(0, Math.min(8, token.length())) + "...");
+
+        User user = userDao.findByResetToken(token)
+                .orElseThrow(() -> {
+                    log.warn("action=verify_email result=failed reason=invalid_token");
+                    return new ResourceNotFoundException("驗證令牌無效或已過期");
+                });
+
+        if (user.getResetTokenExpiry() == null || user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            log.warn("action=verify_email user_id={} result=failed reason=token_expired", user.getId());
+            throw new ResourceNotFoundException("驗證令牌已過期，請重新註冊");
+        }
+
+        user.setEmailValidated(true);
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userDao.update(user);
+
+        log.info("action=verify_email user_id={} username={} result=success", user.getId(), user.getUsername());
+    }
+
+    /**
+     * 重新發送驗證郵件
+     */
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        log.info("action=resend_verification email={} result=attempt", email);
+
+        User user = userDao.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("用戶", email));
+
+        if (user.getEmailValidated()) {
+            throw new BusinessException(400, "該郵箱已驗證");
+        }
+
+        String verificationToken = generateSecureToken();
+        user.setResetToken(verificationToken);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(24));
+        userDao.update(user);
+
+        // TODO: 實際發送驗證郵件
+        log.info("Email verification link: /api/auth/verify-email?token={}", verificationToken);
+    }
+
+    private String generateSecureToken() {
+        byte[] tokenBytes = new byte[32];
+        SECURE_RANDOM.nextBytes(tokenBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
     }
 }
