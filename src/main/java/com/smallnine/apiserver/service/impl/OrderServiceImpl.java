@@ -1,5 +1,6 @@
 package com.smallnine.apiserver.service.impl;
 
+import com.smallnine.apiserver.constants.enums.OrderStatus;
 import com.smallnine.apiserver.constants.enums.ResponseCode;
 import com.smallnine.apiserver.dao.OrderDao;
 import com.smallnine.apiserver.dao.OrderItemDao;
@@ -15,8 +16,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,34 +33,59 @@ public class OrderServiceImpl {
     private final ProductServiceImpl productService;
     
     /**
-     * 根據ID查詢訂單
+     * 根據ID查詢訂單（內部使用，無授權檢查）
      */
-    public Order findById(Long id) {
+    private Order findByIdInternal(Long id) {
         return orderDao.findById(id)
                 .orElseThrow(() -> new BusinessException(ResponseCode.ORDER_NOT_FOUND));
     }
-    
+
     /**
-     * 根據訂單號查詢訂單
+     * 根據ID查詢訂單（帶授權檢查）
      */
-    public Order findByOrderNumber(String orderNumber) {
-        return orderDao.findByOrderNumber(orderNumber)
-                .orElseThrow(() -> new BusinessException(ResponseCode.ORDER_NOT_FOUND));
+    public Order findById(Long id, Long memberId) {
+        Order order = findByIdInternal(id);
+        validateOrderOwnership(order, memberId);
+        return order;
     }
-    
+
+    /**
+     * 根據訂單號查詢訂單（帶授權檢查）
+     */
+    public Order findByOrderNumber(String orderNumber, Long memberId) {
+        Order order = orderDao.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new BusinessException(ResponseCode.ORDER_NOT_FOUND));
+        validateOrderOwnership(order, memberId);
+        return order;
+    }
+
     /**
      * 查詢用戶訂單列表
      */
     public List<Order> findUserOrders(Long memberId, int page, int size) {
+        if (page < 0 || size <= 0 || size > 100) {
+            throw new BusinessException(400, "無效的分頁參數");
+        }
         int offset = page * size;
         return orderDao.findByMemberId(memberId, offset, size);
     }
-    
+
     /**
-     * 查詢訂單項目
+     * 查詢訂單項目（帶授權檢查）
      */
-    public List<OrderItem> findOrderItems(Long orderId) {
+    public List<OrderItem> findOrderItems(Long orderId, Long memberId) {
+        Order order = findByIdInternal(orderId);
+        validateOrderOwnership(order, memberId);
         return orderItemDao.findByOrderId(orderId);
+    }
+
+    /**
+     * 驗證訂單所有權
+     */
+    private void validateOrderOwnership(Order order, Long memberId) {
+        if (!order.getMemberId().equals(memberId)) {
+            throw new BusinessException(ResponseCode.FORBIDDEN, "無權限操作此訂單");
+        }
     }
     
     /**
@@ -87,7 +113,7 @@ public class OrderServiceImpl {
         Order order = new Order();
         order.setMemberId(memberId);
         order.setOrderNumber(generateOrderNumber());
-        order.setStatusId(1L); // 假設1為"待處理"狀態
+        order.setStatusId(OrderStatus.PENDING.getId());
         order.setTotalAmount(totalAmount);
         order.setShippingAmount(BigDecimal.ZERO);
         order.setTaxAmount(BigDecimal.ZERO);
@@ -140,8 +166,8 @@ public class OrderServiceImpl {
     @Transactional
     public void updateOrderStatus(Long orderId, Long statusId) {
         log.info("更新訂單狀態: orderId={}, statusId={}", orderId, statusId);
-        
-        Order order = findById(orderId);
+
+        Order order = findByIdInternal(orderId);
         
         // 驗證狀態轉換是否合法（此處可以加入狀態機邏輯）
         if (order.getStatusId().equals(statusId)) {
@@ -163,19 +189,16 @@ public class OrderServiceImpl {
     @Transactional
     public void cancelOrder(Long orderId, Long memberId) {
         log.info("取消訂單: orderId={}, memberId={}", orderId, memberId);
-        
-        Order order = findById(orderId);
-        
-        // 驗證訂單屬於當前用戶
-        if (!order.getMemberId().equals(memberId)) {
-            throw new BusinessException(ResponseCode.FORBIDDEN, "無權限操作此訂單");
-        }
-        
+
+        Order order = findByIdInternal(orderId);
+        validateOrderOwnership(order, memberId);
+
         // 檢查訂單狀態是否允許取消
-        if (order.getStatusId() > 2L) { // 假設狀態ID > 2表示已處理，不能取消
-            throw new BusinessException(ResponseCode.ORDER_STATUS_ERROR, "訂單已處理，無法取消");
+        OrderStatus currentStatus = OrderStatus.fromId(order.getStatusId());
+        if (!currentStatus.canCancel()) {
+            throw new BusinessException(ResponseCode.ORDER_STATUS_ERROR, "訂單狀態為「" + currentStatus.getDescription() + "」，無法取消");
         }
-        
+
         // 恢復庫存
         List<OrderItem> orderItems = orderItemDao.findByOrderId(orderId);
         for (OrderItem item : orderItems) {
@@ -185,31 +208,59 @@ public class OrderServiceImpl {
                 productDao.updateStock(item.getProductId(), newStock);
             }
         }
-        
-        // 更新訂單狀態為已取消（假設6為已取消狀態）
-        updateOrderStatus(orderId, 6L);
-        
+
+        // 更新訂單狀態為已取消
+        updateOrderStatus(orderId, OrderStatus.CANCELLED.getId());
+
         log.info("訂單取消成功: orderId={}", orderId);
     }
     
     /**
-     * 刪除訂單
+     * 刪除訂單（帶授權檢查）
      */
     @Transactional
-    public void deleteOrder(Long orderId) {
-        log.info("刪除訂單: orderId={}", orderId);
-        
-        Order order = findById(orderId);
-        
+    public void deleteOrder(Long orderId, Long memberId) {
+        log.info("刪除訂單: orderId={}, memberId={}", orderId, memberId);
+
+        Order order = findByIdInternal(orderId);
+        validateOrderOwnership(order, memberId);
+
+        // 只允許刪除已取消的訂單
+        OrderStatus currentStatus = OrderStatus.fromId(order.getStatusId());
+        if (currentStatus != OrderStatus.CANCELLED) {
+            throw new BusinessException(400, "只能刪除已取消的訂單");
+        }
+
         // 先刪除訂單項目
         orderItemDao.deleteByOrderId(orderId);
-        
+
         // 再刪除訂單
         orderDao.deleteById(orderId);
-        
+
         log.info("訂單刪除成功: orderId={}", orderId);
     }
-    
+
+    /**
+     * 刪除訂單（管理員專用，無授權檢查）
+     */
+    @Transactional
+    public void deleteOrderAsAdmin(Long orderId) {
+        log.info("管理員刪除訂單: orderId={}", orderId);
+
+        Order order = findByIdInternal(orderId);
+
+        // 只允許刪除已取消的訂單
+        OrderStatus currentStatus = OrderStatus.fromId(order.getStatusId());
+        if (currentStatus != OrderStatus.CANCELLED) {
+            throw new BusinessException(400, "只能刪除已取消的訂單");
+        }
+
+        orderItemDao.deleteByOrderId(orderId);
+        orderDao.deleteById(orderId);
+
+        log.info("管理員訂單刪除成功: orderId={}", orderId);
+    }
+
     /**
      * 統計用戶訂單數量
      */
@@ -217,21 +268,27 @@ public class OrderServiceImpl {
         return orderDao.countByMemberId(memberId);
     }
     
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final String ORDER_NUMBER_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
     /**
-     * 生成唯一訂單號
+     * 生成唯一訂單號（不可預測）
      */
     private String generateOrderNumber() {
         String prefix = "ORD";
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        
-        // 嘗試生成唯一訂單號
-        for (int i = 1; i <= 10; i++) {
-            String orderNumber = prefix + timestamp + String.format("%02d", i);
+
+        for (int attempt = 0; attempt < 10; attempt++) {
+            StringBuilder sb = new StringBuilder(prefix);
+            for (int i = 0; i < 12; i++) {
+                int index = SECURE_RANDOM.nextInt(ORDER_NUMBER_CHARS.length());
+                sb.append(ORDER_NUMBER_CHARS.charAt(index));
+            }
+            String orderNumber = sb.toString();
             if (!orderDao.existsByOrderNumber(orderNumber)) {
                 return orderNumber;
             }
         }
-        
+
         throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR, "無法生成唯一訂單號");
     }
 }

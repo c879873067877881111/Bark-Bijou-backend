@@ -60,8 +60,7 @@ public class OrderController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long id) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
-        Order order = orderService.findById(id);
-        verifyOrderOwnership(order, user.getId());
+        Order order = orderService.findById(id, user.getId());
         return ResponseEntity.ok(ApiResponse.success(order));
     }
 
@@ -77,8 +76,7 @@ public class OrderController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String orderNumber) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
-        Order order = orderService.findByOrderNumber(orderNumber);
-        verifyOrderOwnership(order, user.getId());
+        Order order = orderService.findByOrderNumber(orderNumber, user.getId());
         return ResponseEntity.ok(ApiResponse.success(order));
     }
 
@@ -94,9 +92,7 @@ public class OrderController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long orderId) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
-        Order order = orderService.findById(orderId);
-        verifyOrderOwnership(order, user.getId());
-        List<OrderItem> orderItems = orderService.findOrderItems(orderId);
+        List<OrderItem> orderItems = orderService.findOrderItems(orderId, user.getId());
         return ResponseEntity.ok(ApiResponse.success(orderItems));
     }
 
@@ -162,7 +158,7 @@ public class OrderController {
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{orderId}")
     public ResponseEntity<ApiResponse<Void>> deleteOrder(@PathVariable Long orderId) {
-        orderService.deleteOrder(orderId);
+        orderService.deleteOrderAsAdmin(orderId);
         return ResponseEntity.ok(ApiResponse.success("訂單刪除成功"));
     }
 
@@ -178,12 +174,4 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(count));
     }
 
-    /**
-     * 驗證訂單所有權
-     */
-    private void verifyOrderOwnership(Order order, Long userId) {
-        if (!order.getMemberId().equals(userId)) {
-            throw new BusinessException(ResponseCode.FORBIDDEN, "無權限訪問此訂單");
-        }
-    }
 }

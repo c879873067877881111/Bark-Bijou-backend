@@ -89,4 +89,26 @@ public class AuthController {
         authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success("登出成功"));
     }
+
+    @Operation(summary = "驗證郵箱", description = "通過驗證令牌驗證用戶郵箱")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "郵箱驗證成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "驗證令牌無效或已過期")
+    })
+    @GetMapping("/verify-email")
+    public ResponseEntity<ApiResponse<String>> verifyEmail(@RequestParam String token) {
+        authService.verifyEmail(token);
+        return ResponseEntity.ok(ApiResponse.success("郵箱驗證成功，現在可以登入"));
+    }
+
+    @Operation(summary = "重新發送驗證郵件", description = "重新發送郵箱驗證郵件")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "驗證郵件已發送"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "郵箱已驗證或用戶不存在")
+    })
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ApiResponse<String>> resendVerification(@RequestParam String email) {
+        authService.resendVerificationEmail(email);
+        return ResponseEntity.ok(ApiResponse.success("驗證郵件已發送，請查收"));
+    }
 }

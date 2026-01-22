@@ -80,10 +80,12 @@
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO member (
             role, username, email, password, realname, phone, gender,
-            vip_levels_id, image_url, email_validated, created_at, updated_at
+            vip_levels_id, image_url, email_validated, reset_token, reset_token_expiry,
+            created_at, updated_at
         ) VALUES (
             #{role}, #{username}, #{email}, #{password}, #{realname}, #{phone}, #{gender},
-            #{vipLevelsId}, #{imageUrl}, #{emailValidated}, NOW(), NOW()
+            #{vipLevelsId}, #{imageUrl}, #{emailValidated}, #{resetToken}, #{resetTokenExpiry},
+            NOW(), NOW()
         )
     </insert>
 
@@ -98,6 +100,8 @@
             vip_levels_id = #{vipLevelsId},
             image_url = #{imageUrl},
             email_validated = #{emailValidated},
+            reset_token = #{resetToken},
+            reset_token_expiry = #{resetTokenExpiry},
             updated_at = NOW()
         WHERE id = #{id}
     </update>
@@ -135,5 +139,14 @@
             updated_at = NOW()
         WHERE id = #{id}
     </update>
+
+    <!-- 根據重置令牌查詢用戶 -->
+    <select id="findByResetToken" resultMap="UserResultMap">
+        SELECT id, role, username, email, password, realname, phone, gender,
+               vip_levels_id, image_url, email_validated, reset_token, reset_token_expiry,
+               created_at, updated_at
+        FROM member
+        WHERE reset_token = #{resetToken}
+    </select>
 
 </mapper>
