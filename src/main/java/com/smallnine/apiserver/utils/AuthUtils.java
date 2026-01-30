@@ -3,6 +3,7 @@ package com.smallnine.apiserver.utils;
 import com.smallnine.apiserver.constants.enums.ResponseCode;
 import com.smallnine.apiserver.entity.User;
 import com.smallnine.apiserver.exception.BusinessException;
+import com.smallnine.apiserver.security.UserPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 
 public final class AuthUtils {
@@ -14,9 +15,9 @@ public final class AuthUtils {
         if (userDetails == null) {
             throw new BusinessException(ResponseCode.UNAUTHORIZED);
         }
-        if (!(userDetails instanceof User user)) {
+        if (!(userDetails instanceof UserPrincipal userPrincipal)) {
             throw new BusinessException(ResponseCode.UNAUTHORIZED, "無效的身份驗證");
         }
-        return user;
+        return userPrincipal.getUser();
     }
 }

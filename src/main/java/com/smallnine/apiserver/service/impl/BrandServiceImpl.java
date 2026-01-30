@@ -9,17 +9,18 @@ import com.smallnine.apiserver.exception.BusinessException;
 import com.smallnine.apiserver.utils.SqlSecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import com.smallnine.apiserver.service.BrandService;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class BrandServiceImpl {
+public class BrandServiceImpl implements BrandService {
 
     private final BrandDao brandDao;
 
@@ -60,7 +61,7 @@ public class BrandServiceImpl {
     @Transactional
     public Brand createBrand(BrandRequest request) {
         if (brandDao.existsByName(request.getName())) {
-            throw new BusinessException(400, "品牌名稱已存在: " + request.getName());
+            throw new BusinessException(ResponseCode.CONFLICT, "品牌名稱已存在: " + request.getName());
         }
 
         Brand brand = new Brand();
@@ -81,7 +82,7 @@ public class BrandServiceImpl {
 
         if (!request.getName().equals(existingBrand.getName()) &&
                 brandDao.existsByName(request.getName())) {
-            throw new BusinessException(400, "品牌名稱已存在: " + request.getName());
+            throw new BusinessException(ResponseCode.CONFLICT, "品牌名稱已存在: " + request.getName());
         }
 
         existingBrand.setName(request.getName());
@@ -100,7 +101,7 @@ public class BrandServiceImpl {
 
         long productCount = brandDao.countProductsByBrandId(id);
         if (productCount > 0) {
-            throw new BusinessException(400, "該品牌下有商品，無法刪除");
+            throw new BusinessException(ResponseCode.BAD_REQUEST, "該品牌下有商品，無法刪除");
         }
 
         brandDao.deleteById(id);

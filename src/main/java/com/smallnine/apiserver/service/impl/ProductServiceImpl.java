@@ -11,17 +11,18 @@ import com.smallnine.apiserver.logging.constants.AuditAction;
 import com.smallnine.apiserver.utils.SqlSecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import com.smallnine.apiserver.service.ProductService;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class ProductServiceImpl {
+public class ProductServiceImpl implements ProductService {
 
     private final ProductDao productDao;
 
@@ -81,7 +82,7 @@ public class ProductServiceImpl {
     @Auditable(action = AuditAction.CREATE, resource = "Product", resourceId = "#result.id")
     public Product createProduct(ProductDTO productDTO) {
         if (productDTO.getSku() != null && productDao.existsBySku(productDTO.getSku())) {
-            throw new BusinessException(400, "SKU已存在: " + productDTO.getSku());
+            throw new BusinessException(ResponseCode.PRODUCT_SKU_EXISTS, "SKU已存在: " + productDTO.getSku());
         }
 
         Product product = convertToEntity(productDTO);
@@ -109,7 +110,7 @@ public class ProductServiceImpl {
 
         if (productDTO.getSku() != null && !productDTO.getSku().equals(existingProduct.getSku())) {
             if (productDao.existsBySku(productDTO.getSku())) {
-                throw new BusinessException(400, "SKU已存在: " + productDTO.getSku());
+                throw new BusinessException(ResponseCode.PRODUCT_SKU_EXISTS, "SKU已存在: " + productDTO.getSku());
             }
         }
 
@@ -144,7 +145,7 @@ public class ProductServiceImpl {
     @Transactional
     public void updateStockInternal(Long id, Integer stockQuantity) {
         if (stockQuantity < 0) {
-            throw new BusinessException(400, "庫存數量不能為負");
+            throw new BusinessException(ResponseCode.INVALID_QUANTITY, "庫存數量不能為負");
         }
 
         Product product = findById(id);
@@ -167,7 +168,7 @@ public class ProductServiceImpl {
     @Transactional
     public boolean decreaseStock(Long id, Integer quantity) {
         if (quantity <= 0) {
-            throw new BusinessException(400, "減少數量必須大於0");
+            throw new BusinessException(ResponseCode.INVALID_QUANTITY, "減少數量必須大於0");
         }
 
         int updatedRows = productDao.decreaseStock(id, quantity);

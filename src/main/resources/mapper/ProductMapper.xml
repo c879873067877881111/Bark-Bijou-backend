@@ -173,6 +173,14 @@
         WHERE id = #{id} AND stock_quantity >= #{quantity}
     </update>
 
+    <!-- 增加商品庫存（原子操作） -->
+    <update id="increaseStock">
+        UPDATE product SET
+            stock_quantity = stock_quantity + #{quantity},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
     <!-- 統計商品總數 -->
     <select id="count" resultType="long">
         SELECT COUNT(*) FROM product WHERE is_active = true

@@ -8,7 +8,8 @@ import com.smallnine.apiserver.entity.Product;
 import com.smallnine.apiserver.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import com.smallnine.apiserver.service.CartService;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -16,10 +17,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class CartServiceImpl {
+public class CartServiceImpl implements CartService {
     
     private final CartItemDao cartItemDao;
     private final ProductDao productDao;
@@ -40,7 +41,7 @@ public class CartServiceImpl {
                  memberId, productId, quantity);
         
         if (quantity <= 0) {
-            throw new BusinessException(400, "商品數量必須大於0");
+            throw new BusinessException(ResponseCode.INVALID_QUANTITY, "商品數量必須大於0");
         }
         
         // 驗證商品是否存在且可用
@@ -48,7 +49,7 @@ public class CartServiceImpl {
                 .orElseThrow(() -> new BusinessException(ResponseCode.PRODUCT_NOT_FOUND));
         
         if (!product.getIsActive()) {
-            throw new BusinessException(400, "商品已下架");
+            throw new BusinessException(ResponseCode.PRODUCT_INACTIVE);
         }
         
         // 檢查庫存
@@ -102,11 +103,11 @@ public class CartServiceImpl {
                  memberId, cartItemId, quantity);
         
         if (quantity <= 0) {
-            throw new BusinessException(400, "商品數量必須大於0");
+            throw new BusinessException(ResponseCode.INVALID_QUANTITY, "商品數量必須大於0");
         }
         
         CartItem cartItem = cartItemDao.findById(cartItemId)
-                .orElseThrow(() -> new BusinessException(400, "購物車項目不存在"));
+                .orElseThrow(() -> new BusinessException(ResponseCode.NOT_FOUND, "購物車項目不存在"));
         
         // 驗證購物車項目屬於當前用戶
         if (!cartItem.getMemberId().equals(memberId)) {
@@ -138,7 +139,7 @@ public class CartServiceImpl {
         log.info("從購物車移除商品: memberId={}, cartItemId={}", memberId, cartItemId);
         
         CartItem cartItem = cartItemDao.findById(cartItemId)
-                .orElseThrow(() -> new BusinessException(400, "購物車項目不存在"));
+                .orElseThrow(() -> new BusinessException(ResponseCode.NOT_FOUND, "購物車項目不存在"));
         
         // 驗證購物車項目屬於當前用戶
         if (!cartItem.getMemberId().equals(memberId)) {

@@ -89,6 +89,11 @@ public interface ProductDao {
      * 減少商品庫存
      */
     int decreaseStock(@Param("id") Long id, @Param("quantity") Integer quantity);
+
+    /**
+     * 增加商品庫存（原子操作）
+     */
+    int increaseStock(@Param("id") Long id, @Param("quantity") Integer quantity);
     
     /**
      * 統計商品總數

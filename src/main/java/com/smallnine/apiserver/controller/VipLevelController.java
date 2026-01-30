@@ -3,7 +3,7 @@ package com.smallnine.apiserver.controller;
 import com.smallnine.apiserver.constants.enums.ResponseCode;
 import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.entity.VipLevel;
-import com.smallnine.apiserver.service.impl.VipLevelServiceImpl;
+import com.smallnine.apiserver.service.VipLevelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -24,7 +24,7 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class VipLevelController {
 
-    private final VipLevelServiceImpl vipLevelService;
+    private final VipLevelService vipLevelService;
 
     @GetMapping("/{id}")
     @Operation(summary = "根據ID查詢VIP等級", description = "通過VIP等級ID獲取詳細訊息")

@@ -9,17 +9,18 @@ import com.smallnine.apiserver.entity.Category;
 import com.smallnine.apiserver.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import com.smallnine.apiserver.service.CategoryService;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class CategoryServiceImpl {
+public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryDao categoryDao;
     private final ProductDao productDao;
@@ -72,13 +73,13 @@ public class CategoryServiceImpl {
     @Transactional
     public Category createCategory(CategoryRequest request) {
         if (categoryDao.existsByName(request.getName())) {
-            throw new BusinessException(400, "分類名稱已存在: " + request.getName());
+            throw new BusinessException(ResponseCode.CONFLICT, "分類名稱已存在: " + request.getName());
         }
 
         if (request.getParentId() != null) {
             Category parentCategory = findById(request.getParentId());
             if (!parentCategory.getIsActive()) {
-                throw new BusinessException(400, "父分類未啟用，無法添加子分類");
+                throw new BusinessException(ResponseCode.BAD_REQUEST, "父分類未啟用，無法添加子分類");
             }
         }
 
@@ -103,16 +104,16 @@ public class CategoryServiceImpl {
 
         if (!request.getName().equals(existingCategory.getName()) &&
                 categoryDao.existsByName(request.getName())) {
-            throw new BusinessException(400, "分類名稱已存在: " + request.getName());
+            throw new BusinessException(ResponseCode.CONFLICT, "分類名稱已存在: " + request.getName());
         }
 
         if (request.getParentId() != null) {
             if (request.getParentId().equals(id)) {
-                throw new BusinessException(400, "分類不能設置自己為父分類");
+                throw new BusinessException(ResponseCode.BAD_REQUEST, "分類不能設置自己為父分類");
             }
             Category parentCategory = findById(request.getParentId());
             if (!parentCategory.getIsActive()) {
-                throw new BusinessException(400, "父分類未啟用，無法設置為父分類");
+                throw new BusinessException(ResponseCode.BAD_REQUEST, "父分類未啟用，無法設置為父分類");
             }
         }
 
@@ -133,12 +134,12 @@ public class CategoryServiceImpl {
         Category category = findById(id);
 
         if (categoryDao.hasChildren(id)) {
-            throw new BusinessException(400, "該分類下有子分類，無法刪除");
+            throw new BusinessException(ResponseCode.BAD_REQUEST, "該分類下有子分類，無法刪除");
         }
 
         long productCount = productDao.countByCategoryId(id);
         if (productCount > 0) {
-            throw new BusinessException(400, "該分類下有商品，無法刪除");
+            throw new BusinessException(ResponseCode.BAD_REQUEST, "該分類下有商品，無法刪除");
         }
 
         categoryDao.deleteById(id);
@@ -150,7 +151,7 @@ public class CategoryServiceImpl {
         Category category = findById(id);
 
         if (!isActive && categoryDao.hasChildren(id)) {
-            throw new BusinessException(400, "該分類下有子分類，無法停用");
+            throw new BusinessException(ResponseCode.BAD_REQUEST, "該分類下有子分類，無法停用");
         }
 
         int updatedRows = categoryDao.updateStatus(id, isActive);

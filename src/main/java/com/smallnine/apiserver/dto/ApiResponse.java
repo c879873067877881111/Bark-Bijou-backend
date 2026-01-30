@@ -55,8 +55,5 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> error(String message) {
         return new ApiResponse<>(ResponseCode.BAD_REQUEST.getCode(), message, null, false);
     }
-    
-    public static <T> ApiResponse<T> fail(String message) {
-        return new ApiResponse<>(ResponseCode.BAD_REQUEST.getCode(), message, null, false);
-    }
+
 }

@@ -4,7 +4,7 @@ import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.dto.BrandRequest;
 import com.smallnine.apiserver.dto.BrandResponse;
 import com.smallnine.apiserver.entity.Brand;
-import com.smallnine.apiserver.service.impl.BrandServiceImpl;
+import com.smallnine.apiserver.service.BrandService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -23,7 +23,7 @@ import java.util.List;
 @Tag(name = "品牌管理", description = "品牌相關 API - 查詢、創建、更新、刪除品牌")
 public class BrandController {
 
-    private final BrandServiceImpl brandService;
+    private final BrandService brandService;
 
     @Operation(summary = "獲取所有品牌", description = "分頁獲取品牌列表")
     @GetMapping

@@ -1,7 +1,7 @@
 package com.smallnine.apiserver.controller;
 
 import com.smallnine.apiserver.dto.*;
-import com.smallnine.apiserver.service.impl.AuthServiceImpl;
+import com.smallnine.apiserver.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "用戶認證", description = "用戶登入、註冊和認證相關 API")
 public class AuthController {
     
-    private final AuthServiceImpl authService;
+    private final AuthService authService;
     
     @Operation(summary = "用戶註冊", description = "註冊新用戶帳號")
     @ApiResponses(value = {
@@ -60,7 +60,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.fail("未授權訪問"));
+                    .body(ApiResponse.error("未授權訪問"));
         }
         UserResponse user = authService.getCurrentUser(userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success(user));

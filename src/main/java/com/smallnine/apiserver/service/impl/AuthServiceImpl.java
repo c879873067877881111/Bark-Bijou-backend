@@ -1,5 +1,6 @@
 package com.smallnine.apiserver.service.impl;
 
+import com.smallnine.apiserver.constants.enums.ResponseCode;
 import com.smallnine.apiserver.dto.*;
 import com.smallnine.apiserver.entity.RefreshToken;
 import com.smallnine.apiserver.entity.User;
@@ -7,6 +8,7 @@ import com.smallnine.apiserver.exception.AccountDisabledException;
 import com.smallnine.apiserver.exception.BusinessException;
 import com.smallnine.apiserver.exception.DuplicateResourceException;
 import com.smallnine.apiserver.exception.ResourceNotFoundException;
+import com.smallnine.apiserver.exception.TokenRefreshException;
 import com.smallnine.apiserver.logging.AuditLogger;
 import com.smallnine.apiserver.logging.LogContext;
 import com.smallnine.apiserver.service.RefreshTokenService;
@@ -17,17 +19,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
+import com.smallnine.apiserver.service.AuthService;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class AuthServiceImpl {
+public class AuthServiceImpl implements AuthService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -74,7 +77,7 @@ public class AuthServiceImpl {
 
         // TODO: 實際發送驗證郵件（需要配置郵件服務）
         // 目前先記錄驗證連結到日誌，方便開發測試
-        log.info("Email verification link: /api/auth/verify-email?token={}", verificationToken);
+        log.debug("Email verification token generated: {}...", verificationToken.substring(0, 8));
 
         return new UserResponse(user);
     }
@@ -141,7 +144,7 @@ public class AuthServiceImpl {
                             user.getUsername(), user.getId());
                     return new AuthResponse(newAccessToken, newRefreshToken.getToken(), user, expiresAt);
                 })
-                .orElseThrow(() -> new RuntimeException("更新令牌無效"));
+                .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "更新令牌無效或已過期"));
     }
     
     @Transactional
@@ -191,7 +194,7 @@ public class AuthServiceImpl {
                 .orElseThrow(() -> new ResourceNotFoundException("用戶", email));
 
         if (user.getEmailValidated()) {
-            throw new BusinessException(400, "該郵箱已驗證");
+            throw new BusinessException(ResponseCode.BAD_REQUEST, "該郵箱已驗證");
         }
 
         String verificationToken = generateSecureToken();
@@ -200,7 +203,7 @@ public class AuthServiceImpl {
         userDao.update(user);
 
         // TODO: 實際發送驗證郵件
-        log.info("Email verification link: /api/auth/verify-email?token={}", verificationToken);
+        log.debug("Email verification token generated: {}...", verificationToken.substring(0, 8));
     }
 
     private String generateSecureToken() {

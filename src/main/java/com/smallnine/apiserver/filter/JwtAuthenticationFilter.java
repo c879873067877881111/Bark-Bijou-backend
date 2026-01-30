@@ -51,6 +51,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
                 
                 if (jwtUtil.validateToken(jwtToken, userDetails)) {
+                    if (!jwtUtil.isAccessToken(jwtToken)) {
+                        log.warn("非 access token 嘗試存取 API: uri={}", request.getRequestURI());
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
