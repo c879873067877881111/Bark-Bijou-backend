@@ -6,16 +6,17 @@ import com.smallnine.apiserver.entity.Article;
 import com.smallnine.apiserver.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import com.smallnine.apiserver.service.ArticleService;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class ArticleServiceImpl {
+public class ArticleServiceImpl implements ArticleService {
 
     private final ArticleDao articleDao;
 

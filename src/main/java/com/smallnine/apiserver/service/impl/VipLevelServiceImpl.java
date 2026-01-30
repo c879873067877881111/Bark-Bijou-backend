@@ -6,17 +6,18 @@ import com.smallnine.apiserver.entity.VipLevel;
 import com.smallnine.apiserver.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import com.smallnine.apiserver.service.VipLevelService;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class VipLevelServiceImpl {
+public class VipLevelServiceImpl implements VipLevelService {
     
     private final VipLevelDao vipLevelDao;
     

@@ -12,7 +12,10 @@ import com.smallnine.apiserver.entity.Product;
 import com.smallnine.apiserver.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import com.smallnine.apiserver.service.CartService;
+import com.smallnine.apiserver.service.OrderService;
+import com.smallnine.apiserver.service.ProductService;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -21,16 +24,16 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
-public class OrderServiceImpl {
-    
+public class OrderServiceImpl implements OrderService {
+
     private final OrderDao orderDao;
     private final OrderItemDao orderItemDao;
     private final ProductDao productDao;
-    private final CartServiceImpl cartService;
-    private final ProductServiceImpl productService;
+    private final CartService cartService;
+    private final ProductService productService;
     
     /**
      * 根據ID查詢訂單（內部使用，無授權檢查）
@@ -64,7 +67,7 @@ public class OrderServiceImpl {
      */
     public List<Order> findUserOrders(Long memberId, int page, int size) {
         if (page < 0 || size <= 0 || size > 100) {
-            throw new BusinessException(400, "無效的分頁參數");
+            throw new BusinessException(ResponseCode.INVALID_PAGINATION);
         }
         int offset = page * size;
         return orderDao.findByMemberId(memberId, offset, size);
@@ -95,21 +98,30 @@ public class OrderServiceImpl {
     public Order createOrderFromCart(Long memberId, String shippingAddress, String notes) {
         log.info("從購物車創建訂單: memberId={}", memberId);
         
-        // 獲取購物車項目
+        // 1. 獲取購物車項目
         List<CartItem> cartItems = cartService.getCartItems(memberId);
         if (cartItems.isEmpty()) {
-            throw new BusinessException(400, "購物車為空，無法創建訂單");
+            throw new BusinessException(ResponseCode.CART_EMPTY, "購物車為空，無法創建訂單");
         }
-        
-        // 驗證庫存
+
+        // 2. 驗證庫存
         if (!cartService.validateCartStock(memberId)) {
             throw new BusinessException(ResponseCode.INSUFFICIENT_STOCK, "購物車中有商品庫存不足");
         }
-        
-        // 計算訂單金額
+
+        // 3. 計算訂單金額
         BigDecimal totalAmount = cartService.calculateCartTotal(memberId);
-        
-        // 創建訂單
+
+        // 4. 先扣減所有庫存（原子 SQL，如果任何步驟失敗整個 @Transactional 會 rollback）
+        for (CartItem cartItem : cartItems) {
+            boolean stockDecreased = productService.decreaseStock(cartItem.getProductId(), cartItem.getQuantity());
+            if (!stockDecreased) {
+                throw new BusinessException(ResponseCode.INSUFFICIENT_STOCK,
+                    "商品庫存不足，訂單創建失敗: productId=" + cartItem.getProductId());
+            }
+        }
+
+        // 5. 創建訂單
         Order order = new Order();
         order.setMemberId(memberId);
         order.setOrderNumber(generateOrderNumber());
@@ -122,11 +134,11 @@ public class OrderServiceImpl {
         order.setNotes(notes);
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
-        
+
         orderDao.insert(order);
         log.info("訂單創建成功: orderId={}, orderNumber={}", order.getId(), order.getOrderNumber());
-        
-        // 創建訂單項目
+
+        // 6. 創建訂單項目
         List<OrderItem> orderItems = new ArrayList<>();
         for (CartItem cartItem : cartItems) {
             OrderItem orderItem = new OrderItem();
@@ -138,24 +150,15 @@ public class OrderServiceImpl {
             orderItem.setCreatedAt(LocalDateTime.now());
             orderItems.add(orderItem);
         }
-        
+
         if (!orderItems.isEmpty()) {
             orderItemDao.insertBatch(orderItems);
             log.info("訂單項目創建成功: 數量={}", orderItems.size());
         }
-        
-        // 減少庫存
-        for (CartItem cartItem : cartItems) {
-            boolean stockDecreased = productService.decreaseStock(cartItem.getProductId(), cartItem.getQuantity());
-            if (!stockDecreased) {
-                throw new BusinessException(ResponseCode.INSUFFICIENT_STOCK, 
-                    "商品庫存不足，訂單創建失敗: productId=" + cartItem.getProductId());
-            }
-        }
-        
-        // 清空購物車
+
+        // 7. 清空購物車
         cartService.clearCart(memberId);
-        
+
         log.info("訂單創建完成: orderId={}, totalAmount={}", order.getId(), totalAmount);
         return order;
     }
@@ -171,7 +174,7 @@ public class OrderServiceImpl {
         
         // 驗證狀態轉換是否合法（此處可以加入狀態機邏輯）
         if (order.getStatusId().equals(statusId)) {
-            throw new BusinessException(400, "訂單狀態未發生變化");
+            throw new BusinessException(ResponseCode.ORDER_STATUS_ERROR, "訂單狀態未發生變化");
         }
         
         int updatedRows = orderDao.updateStatus(orderId, statusId);
@@ -199,14 +202,10 @@ public class OrderServiceImpl {
             throw new BusinessException(ResponseCode.ORDER_STATUS_ERROR, "訂單狀態為「" + currentStatus.getDescription() + "」，無法取消");
         }
 
-        // 恢復庫存
+        // 恢復庫存（原子操作）
         List<OrderItem> orderItems = orderItemDao.findByOrderId(orderId);
         for (OrderItem item : orderItems) {
-            Product product = productDao.findById(item.getProductId()).orElse(null);
-            if (product != null) {
-                int newStock = product.getStockQuantity() + item.getQuantity();
-                productDao.updateStock(item.getProductId(), newStock);
-            }
+            productDao.increaseStock(item.getProductId(), item.getQuantity());
         }
 
         // 更新訂單狀態為已取消
@@ -228,7 +227,7 @@ public class OrderServiceImpl {
         // 只允許刪除已取消的訂單
         OrderStatus currentStatus = OrderStatus.fromId(order.getStatusId());
         if (currentStatus != OrderStatus.CANCELLED) {
-            throw new BusinessException(400, "只能刪除已取消的訂單");
+            throw new BusinessException(ResponseCode.ORDER_STATUS_ERROR, "只能刪除已取消的訂單");
         }
 
         // 先刪除訂單項目
@@ -252,7 +251,7 @@ public class OrderServiceImpl {
         // 只允許刪除已取消的訂單
         OrderStatus currentStatus = OrderStatus.fromId(order.getStatusId());
         if (currentStatus != OrderStatus.CANCELLED) {
-            throw new BusinessException(400, "只能刪除已取消的訂單");
+            throw new BusinessException(ResponseCode.ORDER_STATUS_ERROR, "只能刪除已取消的訂單");
         }
 
         orderItemDao.deleteByOrderId(orderId);

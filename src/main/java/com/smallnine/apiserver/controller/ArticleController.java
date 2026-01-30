@@ -3,7 +3,7 @@ package com.smallnine.apiserver.controller;
 import com.smallnine.apiserver.constants.enums.ResponseCode;
 import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.entity.Article;
-import com.smallnine.apiserver.service.impl.ArticleServiceImpl;
+import com.smallnine.apiserver.service.ArticleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -23,7 +23,7 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class ArticleController {
 
-    private final ArticleServiceImpl articleService;
+    private final ArticleService articleService;
 
     @GetMapping("/{id}")
     @Operation(summary = "根據ID查詢文章", description = "通過文章ID獲取詳細訊息")

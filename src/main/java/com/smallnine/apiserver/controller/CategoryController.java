@@ -4,7 +4,7 @@ import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.dto.CategoryRequest;
 import com.smallnine.apiserver.dto.CategoryResponse;
 import com.smallnine.apiserver.entity.Category;
-import com.smallnine.apiserver.service.impl.CategoryServiceImpl;
+import com.smallnine.apiserver.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -23,7 +23,7 @@ import java.util.List;
 @Tag(name = "分類管理", description = "商品分類相關 API - 查詢、創建、更新、刪除分類")
 public class CategoryController {
 
-    private final CategoryServiceImpl categoryService;
+    private final CategoryService categoryService;
 
     @Operation(summary = "獲取所有分類", description = "分頁獲取分類列表")
     @GetMapping

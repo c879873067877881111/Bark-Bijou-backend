@@ -1,11 +1,7 @@
-package com.smallnine.apiserver.config;
+package com.smallnine.apiserver.exception;
 
 import com.smallnine.apiserver.constants.enums.ResponseCode;
 import com.smallnine.apiserver.dto.ApiResponse;
-import com.smallnine.apiserver.exception.AccountDisabledException;
-import com.smallnine.apiserver.exception.BusinessException;
-import com.smallnine.apiserver.exception.DuplicateResourceException;
-import com.smallnine.apiserver.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -24,7 +20,7 @@ import java.util.Map;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
-    
+
     /**
      * 業務異常處理
      */
@@ -61,42 +57,42 @@ public class GlobalExceptionHandler {
 
         log.warn("資源重複: {}, 請求: {}", ex.getMessage(), request.getDescription(false));
 
-        ApiResponse<Void> response = ApiResponse.error(ResponseCode.BAD_REQUEST.getCode(), ex.getMessage());
+        ApiResponse<Void> response = ApiResponse.error(ResponseCode.CONFLICT.getCode(), ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
-    
+
     /**
      * 參數驗證異常處理
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(
             MethodArgumentNotValidException ex) {
-        
+
         log.warn("參數驗證失敗: {}", ex.getMessage());
-        
+
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        
+
         ApiResponse<Map<String, String>> response = ApiResponse.error(
                 ResponseCode.BAD_REQUEST.getCode(), "參數驗證失敗");
         response.setData(errors);
-        
+
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
-    
+
     /**
      * 資料庫約束違反異常處理
      */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolationException(
             DataIntegrityViolationException ex, WebRequest request) {
-        
+
         log.error("數據庫約束違反: {}, 請求: {}", ex.getMessage(), request.getDescription(false));
-        
+
         String message = "數據操作失敗,請檢查數據完整性";
         if (ex.getMessage() != null) {
             if (ex.getMessage().contains("unique")) {
@@ -105,11 +101,11 @@ public class GlobalExceptionHandler {
                 message = "存在關聯數據,無法刪除";
             }
         }
-        
-        ApiResponse<Void> response = ApiResponse.error(ResponseCode.BAD_REQUEST.getCode(), message);
+
+        ApiResponse<Void> response = ApiResponse.error(ResponseCode.CONFLICT.getCode(), message);
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
-    
+
     /**
      * 帳號停用異常處理
      */
@@ -124,6 +120,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Token 刷新異常處理
+     */
+    @ExceptionHandler(TokenRefreshException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTokenRefreshException(
+            TokenRefreshException ex, WebRequest request) {
+
+        log.warn("Token刷新失敗: {}, 請求: {}", ex.getMessage(), request.getDescription(false));
+
+        ApiResponse<Void> response = ApiResponse.error(ResponseCode.UNAUTHORIZED.getCode(), ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    /**
      * 認證異常處理
      */
     @ExceptionHandler(AuthenticationException.class)
@@ -135,46 +144,46 @@ public class GlobalExceptionHandler {
         ApiResponse<Void> response = ApiResponse.error(ResponseCode.UNAUTHORIZED.getCode(), "用戶名或密碼錯誤");
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
-    
+
     /**
      * 授權異常處理
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(
             AccessDeniedException ex, WebRequest request) {
-        
+
         log.warn("授權失敗: {}, 請求: {}", ex.getMessage(), request.getDescription(false));
-        
+
         ApiResponse<Void> response = ApiResponse.error(ResponseCode.FORBIDDEN);
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
-    
-    
+
+
     /**
      * 運行時異常處理
      */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(
             RuntimeException ex, WebRequest request) {
-        
+
         log.error("運行時異常: {}, 請求: {}", ex.getMessage(), request.getDescription(false), ex);
-        
+
         ApiResponse<Void> response = ApiResponse.error(
-                ResponseCode.INTERNAL_SERVER_ERROR.getCode(), 
+                ResponseCode.INTERNAL_SERVER_ERROR.getCode(),
                 "系統處理異常,請稍後重試");
-                
+
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    
+
     /**
      * 其他所有異常處理
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneralException(
             Exception ex, WebRequest request) {
-        
+
         log.error("系統異常: {}, 請求: {}", ex.getMessage(), request.getDescription(false), ex);
-        
+
         ApiResponse<Void> response = ApiResponse.error(ResponseCode.INTERNAL_SERVER_ERROR);
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }

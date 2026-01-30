@@ -2,8 +2,9 @@ package com.smallnine.apiserver.controller;
 
 import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.dto.ProductRequest;
+import com.smallnine.apiserver.dto.ProductResponse;
 import com.smallnine.apiserver.entity.Product;
-import com.smallnine.apiserver.service.impl.ProductServiceImpl;
+import com.smallnine.apiserver.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -12,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -23,7 +25,7 @@ import java.util.List;
 @Tag(name = "商品管理", description = "商品相關 API - 查詢、創建、更新、刪除商品")
 public class ProductController {
 
-    private final ProductServiceImpl productService;
+    private final ProductService productService;
 
     @Operation(summary = "獲取所有商品", description = "分頁獲取商品列表")
     @ApiResponses(value = {
@@ -31,10 +33,11 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
     })
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Product>>> getAllProducts(
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        List<Product> products = productService.findAll(page, size);
+        List<ProductResponse> products = productService.findAll(page, size)
+                .stream().map(ProductResponse::new).toList();
         return ResponseEntity.ok(ApiResponse.success(products));
     }
 
@@ -45,9 +48,9 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Product>> getProductById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long id) {
         Product product = productService.findById(id);
-        return ResponseEntity.ok(ApiResponse.success(product));
+        return ResponseEntity.ok(ApiResponse.success(new ProductResponse(product)));
     }
 
     @Operation(summary = "搜索商品", description = "根據關鍵字和價格範圍搜索商品")
@@ -56,13 +59,14 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
     })
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<Product>>> searchProducts(
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> searchProducts(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        List<Product> products = productService.searchProducts(keyword, minPrice, maxPrice, page, size);
+        List<ProductResponse> products = productService.searchProducts(keyword, minPrice, maxPrice, page, size)
+                .stream().map(ProductResponse::new).toList();
         return ResponseEntity.ok(ApiResponse.success(products));
     }
 
@@ -72,11 +76,12 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
     })
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<ApiResponse<List<Product>>> getProductsByCategory(
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getProductsByCategory(
             @PathVariable Long categoryId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        List<Product> products = productService.findByCategory(categoryId, page, size);
+        List<ProductResponse> products = productService.findByCategory(categoryId, page, size)
+                .stream().map(ProductResponse::new).toList();
         return ResponseEntity.ok(ApiResponse.success(products));
     }
 
@@ -88,11 +93,12 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
     })
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ApiResponse<Product>> createProduct(@Valid @RequestBody ProductRequest request) {
+    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(@Valid @RequestBody ProductRequest request) {
         Product product = productService.createProduct(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("商品創建成功", product));
+                .body(ApiResponse.success("商品創建成功", new ProductResponse(product)));
     }
 
     @Operation(summary = "更新商品", description = "根據ID更新商品訊息")
@@ -104,12 +110,13 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
     })
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Product>> updateProduct(
+    public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
             @PathVariable Long id,
             @Valid @RequestBody ProductRequest request) {
         Product product = productService.updateProduct(id, request);
-        return ResponseEntity.ok(ApiResponse.success("商品更新成功", product));
+        return ResponseEntity.ok(ApiResponse.success("商品更新成功", new ProductResponse(product)));
     }
 
     @Operation(summary = "刪除商品", description = "根據ID刪除商品")
@@ -120,6 +127,7 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
     })
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
@@ -135,6 +143,7 @@ public class ProductController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "內部服務器錯誤")
     })
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/stock")
     public ResponseEntity<ApiResponse<Void>> updateStock(
             @PathVariable Long id,

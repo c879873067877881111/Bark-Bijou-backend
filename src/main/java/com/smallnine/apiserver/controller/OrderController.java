@@ -1,13 +1,13 @@
 package com.smallnine.apiserver.controller;
 
-import com.smallnine.apiserver.constants.enums.ResponseCode;
 import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.dto.CreateOrderRequest;
+import com.smallnine.apiserver.dto.OrderItemResponse;
+import com.smallnine.apiserver.dto.OrderResponse;
 import com.smallnine.apiserver.entity.Order;
 import com.smallnine.apiserver.entity.OrderItem;
 import com.smallnine.apiserver.entity.User;
-import com.smallnine.apiserver.exception.BusinessException;
-import com.smallnine.apiserver.service.impl.OrderServiceImpl;
+import com.smallnine.apiserver.service.OrderService;
 import com.smallnine.apiserver.utils.AuthUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,7 +31,7 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class OrderController {
 
-    private final OrderServiceImpl orderService;
+    private final OrderService orderService;
 
     @Operation(summary = "獲取用戶訂單列表", description = "分頁獲取當前用戶的訂單列表")
     @ApiResponses(value = {
@@ -39,12 +39,13 @@ public class OrderController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未授權")
     })
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Order>>> getUserOrders(
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getUserOrders(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
-        List<Order> orders = orderService.findUserOrders(user.getId(), page, size);
+        List<OrderResponse> orders = orderService.findUserOrders(user.getId(), page, size)
+                .stream().map(OrderResponse::fromEntity).toList();
         return ResponseEntity.ok(ApiResponse.success(orders));
     }
 
@@ -56,12 +57,12 @@ public class OrderController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "訂單不存在")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Order>> getOrderById(
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long id) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
         Order order = orderService.findById(id, user.getId());
-        return ResponseEntity.ok(ApiResponse.success(order));
+        return ResponseEntity.ok(ApiResponse.success(OrderResponse.fromEntity(order)));
     }
 
     @Operation(summary = "根據訂單號獲取訂單", description = "根據訂單號獲取訂單詳情")
@@ -72,12 +73,12 @@ public class OrderController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "訂單不存在")
     })
     @GetMapping("/number/{orderNumber}")
-    public ResponseEntity<ApiResponse<Order>> getOrderByNumber(
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrderByNumber(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String orderNumber) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
         Order order = orderService.findByOrderNumber(orderNumber, user.getId());
-        return ResponseEntity.ok(ApiResponse.success(order));
+        return ResponseEntity.ok(ApiResponse.success(OrderResponse.fromEntity(order)));
     }
 
     @Operation(summary = "獲取訂單項目", description = "獲取指定訂單的所有訂單項目")
@@ -88,11 +89,12 @@ public class OrderController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "訂單不存在")
     })
     @GetMapping("/{orderId}/items")
-    public ResponseEntity<ApiResponse<List<OrderItem>>> getOrderItems(
+    public ResponseEntity<ApiResponse<List<OrderItemResponse>>> getOrderItems(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long orderId) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
-        List<OrderItem> orderItems = orderService.findOrderItems(orderId, user.getId());
+        List<OrderItemResponse> orderItems = orderService.findOrderItems(orderId, user.getId())
+                .stream().map(OrderItemResponse::fromEntity).toList();
         return ResponseEntity.ok(ApiResponse.success(orderItems));
     }
 
@@ -103,7 +105,7 @@ public class OrderController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "未授權")
     })
     @PostMapping
-    public ResponseEntity<ApiResponse<Order>> createOrder(
+    public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody CreateOrderRequest request) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
@@ -113,7 +115,7 @@ public class OrderController {
                 request.getNotes()
         );
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("訂單創建成功", order));
+                .body(ApiResponse.success("訂單創建成功", OrderResponse.fromEntity(order)));
     }
 
     @Operation(summary = "更新訂單狀態", description = "更新訂單狀態（管理員功能）")

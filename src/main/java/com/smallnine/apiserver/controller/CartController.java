@@ -4,7 +4,7 @@ import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.dto.CartItemRequest;
 import com.smallnine.apiserver.entity.CartItem;
 import com.smallnine.apiserver.entity.User;
-import com.smallnine.apiserver.service.impl.CartServiceImpl;
+import com.smallnine.apiserver.service.CartService;
 import com.smallnine.apiserver.utils.AuthUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -28,7 +28,7 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class CartController {
 
-    private final CartServiceImpl cartService;
+    private final CartService cartService;
 
     @Operation(summary = "獲取購物車", description = "獲取當前用戶的購物車所有項目")
     @ApiResponses(value = {

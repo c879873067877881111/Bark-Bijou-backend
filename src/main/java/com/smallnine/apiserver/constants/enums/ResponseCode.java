@@ -13,6 +13,7 @@ public enum ResponseCode {
     UNAUTHORIZED(401, "未授權", HttpStatus.UNAUTHORIZED),
     FORBIDDEN(403, "禁止訪問", HttpStatus.FORBIDDEN),
     NOT_FOUND(404, "資源不存在", HttpStatus.NOT_FOUND),
+    CONFLICT(409, "資源衝突", HttpStatus.CONFLICT),
     INTERNAL_SERVER_ERROR(500, "內部服務器錯誤", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 業務異常 - 用戶相關
@@ -23,12 +24,17 @@ public enum ResponseCode {
     // 業務異常 - 商品相關
     PRODUCT_NOT_FOUND(2001, "商品不存在", HttpStatus.NOT_FOUND),
     INSUFFICIENT_STOCK(2002, "庫存不足", HttpStatus.BAD_REQUEST),
+    PRODUCT_SKU_EXISTS(2005, "SKU已存在", HttpStatus.BAD_REQUEST),
+    PRODUCT_INACTIVE(2006, "商品已下架", HttpStatus.BAD_REQUEST),
+    INVALID_QUANTITY(2007, "無效的數量", HttpStatus.BAD_REQUEST),
     CATEGORY_NOT_FOUND(2003, "分類不存在", HttpStatus.NOT_FOUND),
     BRAND_NOT_FOUND(2004, "品牌不存在", HttpStatus.NOT_FOUND),
 
     // 業務異常 - 訂單相關
     ORDER_NOT_FOUND(3001, "訂單不存在", HttpStatus.NOT_FOUND),
     ORDER_STATUS_ERROR(3002, "訂單狀態錯誤", HttpStatus.BAD_REQUEST),
+    CART_EMPTY(3003, "購物車為空", HttpStatus.BAD_REQUEST),
+    INVALID_PAGINATION(3004, "無效的分頁參數", HttpStatus.BAD_REQUEST),
 
     // 業務異常 - 文章相關
     ARTICLE_NOT_FOUND(4001, "文章不存在", HttpStatus.NOT_FOUND),
