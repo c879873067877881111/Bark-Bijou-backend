@@ -149,4 +149,32 @@
         WHERE reset_token = #{resetToken}
     </select>
 
+    <!-- 更新會員資料 -->
+    <update id="updateProfile">
+        UPDATE member SET
+            username = #{username},
+            email = #{email},
+            phone = #{phone},
+            gender = #{gender},
+            birth_date = #{birthDate},
+            image_url = #{imageUrl},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新密碼 -->
+    <update id="updatePassword">
+        UPDATE member SET
+            password = #{password},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根據 Google UID 查詢用戶 -->
+    <select id="findByGoogleUid" resultMap="UserResultMap">
+        SELECT <include refid="BaseColumns" />, google_uid, google_name
+        FROM member
+        WHERE google_uid = #{googleUid}
+    </select>
+
 </mapper>
