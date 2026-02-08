@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -13,10 +14,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.MediaType;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Arrays;
@@ -47,12 +50,43 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/**").permitAll()
+                // 認證相關（只開登入/註冊/刷新）
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh").permitAll()
+
+                // Swagger
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/docs/**", "/v3/api-docs/**").permitAll()
-                .requestMatchers("/api/articles/**").permitAll()
+
+                // 收藏類 endpoint 需要認證（必須在 wildcard 之前）
+                .requestMatchers("/api/articles/favorites/**").authenticated()
+                .requestMatchers("/api/products/favorites/**").authenticated()
+
+                // 唯讀瀏覽（只開 GET）
+                .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/coupon/coupons/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/brands/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/sitter/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/vip-levels/**").permitAll()
+
+                // 靜態資源（圖片）
+                .requestMatchers(HttpMethod.GET, "/member/member_images/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+
+                // 健康檢查
                 .requestMatchers("/api/health").permitAll()
                 .requestMatchers("/api/log-test/**").permitAll()
+
+                // 其餘一律要 JWT
                 .anyRequest().authenticated()
+            )
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write("{\"code\":401,\"message\":\"未登入或令牌已過期\",\"success\":false}");
+                })
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
