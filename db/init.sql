@@ -488,7 +488,7 @@ INSERT INTO product_images (product_id, image_url, alt_text, is_primary, sort_or
 
 -- 測試帳號 (密碼: password)
 INSERT INTO member (role, username, realname, email, password, phone, gender, email_validated, vip_levels_id) VALUES
-('USER', 'testuser', '測試用戶', 'test@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '0912345678', 'male', TRUE, 1),
-('ADMIN', 'admin', '系統管理員', 'admin@example.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '0987654321', 'female', TRUE, 4);
+('USER', 'testuser', '測試用戶', 'test@example.com', '$2b$10$eDcdZCnC2/nCYZeOgbiVlOxbafGhbcwhUYrWxcJr51cheE/g5IC5a', '0912345678', 'male', TRUE, 1),
+('ADMIN', 'admin', '系統管理員', 'admin@example.com', '$2b$10$eDcdZCnC2/nCYZeOgbiVlOxbafGhbcwhUYrWxcJr51cheE/g5IC5a', '0987654321', 'female', TRUE, 4);
 
 COMMIT;
