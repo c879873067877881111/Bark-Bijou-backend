@@ -169,20 +169,36 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public Order createOrderFromCart(Long memberId, String shippingAddress, String notes, String idempotencyKey) {
-        if (idempotencyKey != null) {
-            String redisKey = "order:idempotency:" + memberId + ":" + idempotencyKey;
+        if (idempotencyKey == null) {
+            return createOrderFromCart(memberId, shippingAddress, notes);
+        }
+
+        String redisKey = "order:idempotency:" + memberId + ":" + idempotencyKey;
+
+        // SETNX 原子佔位，防止並行請求同時通過
+        Boolean acquired = redisTemplate.opsForValue()
+                .setIfAbsent(redisKey, "PENDING", 24, TimeUnit.HOURS);
+
+        if (Boolean.FALSE.equals(acquired)) {
+            // 鍵已存在，查回已建立的訂單
             Object existingOrderId = redisTemplate.opsForValue().get(redisKey);
-            if (existingOrderId != null) {
+            if (existingOrderId != null && !"PENDING".equals(existingOrderId.toString())) {
                 return orderDao.findById(Long.parseLong(existingOrderId.toString()))
                         .orElseThrow(() -> new BusinessException(ResponseCode.ORDER_NOT_FOUND));
             }
+            throw new BusinessException(ResponseCode.CONFLICT, "訂單正在建立中，請稍後重試");
+        }
 
+        try {
             Order order = createOrderFromCart(memberId, shippingAddress, notes);
-
+            // 建單成功，將 PENDING 替換成實際訂單 ID
             redisTemplate.opsForValue().set(redisKey, order.getId().toString(), 24, TimeUnit.HOURS);
             return order;
+        } catch (Exception e) {
+            // 建單失敗，釋放佔位鍵
+            redisTemplate.delete(redisKey);
+            throw e;
         }
-        return createOrderFromCart(memberId, shippingAddress, notes);
     }
 
     /**

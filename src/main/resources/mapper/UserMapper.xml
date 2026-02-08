@@ -31,7 +31,10 @@
 
     <sql id="BaseColumns">
         id, role, username, email, password, realname, phone, gender,
-        vip_levels_id, image_url, email_validated, created_at, updated_at
+        birth_date, vip_levels_id, image_url, email_validated,
+        google_uid, google_name, city, address, zip,
+        reset_token, reset_token_expiry, reset_token_secret,
+        image_updated_at, created_at, updated_at
     </sql>
 
     <!-- 根據ID查詢用戶 -->
@@ -172,7 +175,7 @@
 
     <!-- 根據 Google UID 查詢用戶 -->
     <select id="findByGoogleUid" resultMap="UserResultMap">
-        SELECT <include refid="BaseColumns" />, google_uid, google_name
+        SELECT <include refid="BaseColumns" />
         FROM member
         WHERE google_uid = #{googleUid}
     </select>

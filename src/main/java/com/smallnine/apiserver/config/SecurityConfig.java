@@ -54,6 +54,10 @@ public class SecurityConfig {
                 // Swagger
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/docs/**", "/v3/api-docs/**").permitAll()
 
+                // 收藏類 endpoint 需要認證（必須在 wildcard 之前）
+                .requestMatchers("/api/articles/favorites/**").authenticated()
+                .requestMatchers("/api/products/favorites/**").authenticated()
+
                 // 唯讀瀏覽（只開 GET）
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
