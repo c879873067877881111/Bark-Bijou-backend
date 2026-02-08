@@ -1,0 +1,62 @@
+package com.smallnine.apiserver.controller;
+
+import com.smallnine.apiserver.dto.ApiResponse;
+import com.smallnine.apiserver.dao.ArticleFavoriteDao;
+import com.smallnine.apiserver.entity.User;
+import com.smallnine.apiserver.utils.AuthUtils;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/articles/favorites")
+@RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
+@Tag(name = "文章收藏", description = "文章收藏管理 API")
+public class ArticleFavoriteController {
+
+    private final ArticleFavoriteDao articleFavoriteDao;
+
+    @Operation(summary = "取得我的收藏文章 ID 列表")
+    @GetMapping
+    public ApiResponse<List<Long>> getMyFavorites(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            return ApiResponse.success(List.of());
+        }
+        User user = AuthUtils.getAuthenticatedUser(userDetails);
+        return ApiResponse.success(articleFavoriteDao.findArticleIdsByMemberId(user.getId()));
+    }
+
+    @Operation(summary = "收藏文章")
+    @PostMapping("/{articleId}")
+    public ApiResponse<Map<String, Object>> addFavorite(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long articleId) {
+        User user = AuthUtils.getAuthenticatedUser(userDetails);
+        boolean exists = articleFavoriteDao.existsByMemberIdAndArticleId(user.getId(), articleId);
+        if (!exists) {
+            articleFavoriteDao.insert(user.getId(), articleId);
+        }
+        int count = articleFavoriteDao.countByArticleId(articleId);
+        return ApiResponse.success(Map.of("favorite", true, "count", count));
+    }
+
+    @Operation(summary = "取消收藏文章")
+    @DeleteMapping("/{articleId}")
+    public ApiResponse<Map<String, Object>> removeFavorite(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable Long articleId) {
+        User user = AuthUtils.getAuthenticatedUser(userDetails);
+        articleFavoriteDao.deleteByMemberIdAndArticleId(user.getId(), articleId);
+        int count = articleFavoriteDao.countByArticleId(articleId);
+        return ApiResponse.success(Map.of("favorite", false, "count", count));
+    }
+}
