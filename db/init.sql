@@ -77,7 +77,7 @@ CREATE TABLE member (
   email_validated BOOLEAN NOT NULL DEFAULT FALSE,
   google_uid VARCHAR(255),
   image_updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  reset_token VARCHAR(10),
+  reset_token VARCHAR(255),
   reset_token_expiry TIMESTAMP,
   reset_token_secret VARCHAR(255),
   google_name VARCHAR(255),
@@ -98,17 +98,24 @@ CREATE TABLE article (
   author VARCHAR(255),
   title VARCHAR(255) NOT NULL,
   dogs_id INTEGER,
-  dogs_breed VARCHAR(255) NOT NULL,
-  dogs_images VARCHAR(255) NOT NULL,
+  dogs_breed VARCHAR(255),
+  dogs_images VARCHAR(255),
   content1 TEXT NOT NULL,
-  content2 TEXT NOT NULL,
+  content2 TEXT,
   created_date TIMESTAMP NOT NULL,
   created_id INTEGER NOT NULL,
-  event_id INTEGER NOT NULL,
+  event_id INTEGER,
   valid INTEGER NOT NULL DEFAULT 1,
-  article_images VARCHAR(255) NOT NULL,
+  article_images VARCHAR(255),
   category_name VARCHAR(255) NOT NULL
 );
+
+-- Migration: 將 article 表中非必要欄位改為允許 NULL
+-- ALTER TABLE article ALTER COLUMN dogs_breed DROP NOT NULL;
+-- ALTER TABLE article ALTER COLUMN dogs_images DROP NOT NULL;
+-- ALTER TABLE article ALTER COLUMN content2 DROP NOT NULL;
+-- ALTER TABLE article ALTER COLUMN event_id DROP NOT NULL;
+-- ALTER TABLE article ALTER COLUMN article_images DROP NOT NULL;
 
 -- ============================================================
 -- 4. product 及其子表
@@ -441,6 +448,11 @@ INSERT INTO vip_levels (name, minimum_points, discount_percentage, benefits) VAL
 ('Silver', 1000, 5, '5%折扣,生日優惠'),
 ('Gold', 5000, 10, '10%折扣,免運費,優先客服'),
 ('Platinum', 15000, 15, '15%折扣,專屬優惠,VIP活動');
+
+-- ============================================================
+-- Migration: widen reset_token for Base64 tokens (run on existing DB)
+-- ALTER TABLE member ALTER COLUMN reset_token TYPE VARCHAR(255);
+-- ============================================================
 
 INSERT INTO order_status (name, description, color, sort_order) VALUES
 ('pending', '待處理', '#ffc107', 1),

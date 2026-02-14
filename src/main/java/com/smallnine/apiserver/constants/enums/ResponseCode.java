@@ -84,7 +84,10 @@ public enum ResponseCode {
     REVIEW_NO_BOOKING(8005, "尚未預約無法評價", HttpStatus.BAD_REQUEST),
 
     // 業務異常 - 收件人相關
-    RECIPIENT_NOT_FOUND(8101, "收件人不存在", HttpStatus.NOT_FOUND);
+    RECIPIENT_NOT_FOUND(8101, "收件人不存在", HttpStatus.NOT_FOUND),
+
+    // 業務異常 - 郵件相關
+    MAIL_SEND_FAILED(9001, "郵件發送失敗", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final int code;
     private final String message;
