@@ -1,6 +1,7 @@
 package com.smallnine.apiserver.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.smallnine.apiserver.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "用戶訊息回應")
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class UserResponse {
 
     @Schema(description = "用戶ID", example = "1")
@@ -35,27 +37,21 @@ public class UserResponse {
     private User.Gender gender;
 
     @Schema(description = "生日")
-    @JsonProperty("birth_date")
     private LocalDate birthDate;
 
     @Schema(description = "會員等級ID", example = "1")
-    @JsonProperty("vip_levels_id")
     private Integer vipLevelsId;
 
     @Schema(description = "頭像URL", example = "/member/member_images/user-img.svg")
-    @JsonProperty("image_url")
     private String imageUrl;
 
     @Schema(description = "信箱是否已驗證", example = "false")
-    @JsonProperty("email_validated")
     private Boolean emailValidated;
 
     @Schema(description = "創建時間")
-    @JsonProperty("created_at")
     private LocalDateTime createdAt;
 
     @Schema(description = "更新時間")
-    @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
 
     public UserResponse(User user) {

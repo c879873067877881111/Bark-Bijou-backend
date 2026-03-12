@@ -41,9 +41,9 @@ public class MemberController {
 
         User user = AuthUtils.getAuthenticatedUser(userDetails);
 
-        if (username != null) user.setUsername(username);
+        if (username != null && !username.isBlank()) user.setUsername(username);
         if (realname != null) user.setRealname(realname);
-        if (email != null) user.setEmail(email);
+        if (email != null && !email.isBlank()) user.setEmail(email);
         if (gender != null) {
             try { user.setGender(User.Gender.valueOf(gender)); } catch (Exception ignored) {}
         }
