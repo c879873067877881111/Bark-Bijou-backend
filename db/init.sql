@@ -69,7 +69,7 @@ CREATE TABLE member (
   email VARCHAR(255) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
   phone VARCHAR(10),
-  gender VARCHAR(10) NOT NULL CHECK (gender IN ('male', 'female')),
+  gender VARCHAR(10) CHECK (gender IN ('male', 'female')),
   birth_date DATE,
   vip_levels_id INTEGER NOT NULL DEFAULT 1,
   image_url VARCHAR(255) NOT NULL DEFAULT '/member/member_images/user-img.svg',

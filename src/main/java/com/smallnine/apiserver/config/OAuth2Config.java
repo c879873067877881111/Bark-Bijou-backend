@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -45,8 +46,9 @@ public class OAuth2Config {
 
         return (HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) -> {
             log.error("action=oauth2_login result=failed reason={}", exception.getMessage());
-            String errorRedirect = redirectUri.replace("/oauth/callback", "/login")
-                    + "?error=" + URLEncoder.encode("Google 登入失敗", StandardCharsets.UTF_8);
+            URI uri = URI.create(redirectUri);
+            String errorRedirect = uri.getScheme() + "://" + uri.getAuthority()
+                    + "/login?error=" + URLEncoder.encode("Google 登入失敗", StandardCharsets.UTF_8);
             response.sendRedirect(errorRedirect);
         };
     }
@@ -84,7 +86,6 @@ public class OAuth2Config {
                 user.setGoogleName(name);
                 user.setImageUrl(picture != null ? picture : "/member/member_images/user-img.svg");
                 user.setEmailValidated(true);
-                user.setGender(User.Gender.male);
                 userDao.insert(user);
                 log.info("action=oauth2_login new_user={} email={}", user.getUsername(), email);
             } else if (user.getGoogleUid() == null) {
