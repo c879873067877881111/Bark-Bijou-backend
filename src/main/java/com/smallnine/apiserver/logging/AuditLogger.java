@@ -8,11 +8,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import static net.logstash.logback.argument.StructuredArguments.entries;
+
 /**
  * 審計日誌記錄器
  * 專門記錄需要合規審計的操作
  *
  * 使用獨立的 Logger，輸出到獨立的日誌文件
+ * LogstashEncoder 會把 StructuredArguments 的欄位提升為 top-level JSON fields
+ * 非 JSON appender 仍然看到 key=value 格式（StructuredArguments.entries 的 toString）
  */
 @Component
 public class AuditLogger {
@@ -24,7 +28,7 @@ public class AuditLogger {
      * 記錄審計事件
      */
     public void log(AuditEvent event) {
-        auditLog.info(event.toLogString());
+        auditLog.info("{}", entries(event.toJsonMap()));
     }
 
     /**
@@ -40,7 +44,7 @@ public class AuditLogger {
                 .resource(resource)
                 .resourceId(resourceId)
                 .build();
-        auditLog.info(event.toLogString());
+        auditLog.info("{}", entries(event.toJsonMap()));
     }
 
     /**
@@ -56,7 +60,7 @@ public class AuditLogger {
                 .resource(resource)
                 .description(reason)
                 .build();
-        auditLog.warn(event.toLogString());
+        auditLog.warn("{}", entries(event.toJsonMap()));
     }
 
     // ===== 安全事件快捷方法 =====
@@ -72,7 +76,7 @@ public class AuditLogger {
                 .username(username)
                 .clientIp(LogContext.getClientIp())
                 .build();
-        securityLog.info(event.toLogString());
+        securityLog.info("{}", entries(event.toJsonMap()));
     }
 
     /**
@@ -86,7 +90,7 @@ public class AuditLogger {
                 .clientIp(LogContext.getClientIp())
                 .description(reason)
                 .build();
-        securityLog.warn(event.toLogString());
+        securityLog.warn("{}", entries(event.toJsonMap()));
     }
 
     /**
@@ -100,7 +104,7 @@ public class AuditLogger {
                 .username(username)
                 .clientIp(LogContext.getClientIp())
                 .build();
-        securityLog.info(event.toLogString());
+        securityLog.info("{}", entries(event.toJsonMap()));
     }
 
     /**
@@ -116,7 +120,7 @@ public class AuditLogger {
                 .resource(resource)
                 .description(reason)
                 .build();
-        securityLog.warn(event.toLogString());
+        securityLog.warn("{}", entries(event.toJsonMap()));
     }
 
     // ===== CRUD 操作審計 =====

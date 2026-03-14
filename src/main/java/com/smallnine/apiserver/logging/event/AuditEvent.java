@@ -72,6 +72,32 @@ public class AuditEvent {
         return sb.toString();
     }
 
+    /**
+     * 轉換為 Map，供 LogstashEncoder + StructuredArguments 使用
+     * 欄位會成為 JSON top-level fields，可直接在 Elasticsearch 查詢
+     */
+    public Map<String, Object> toJsonMap() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("audit_event", true);
+        map.put("action", action.name());
+        map.put("result", result.name());
+
+        if (userId != null) map.put("user_id", userId);
+        if (username != null) map.put("username", username);
+        if (clientIp != null) map.put("client_ip", clientIp);
+        if (resource != null) map.put("resource", resource);
+        if (resourceId != null) map.put("resource_id", resourceId);
+        if (description != null) map.put("desc", description);
+        if (duration != null) map.put("duration_ms", duration);
+        if (traceId != null) map.put("trace_id", traceId);
+
+        if (details != null && !details.isEmpty()) {
+            map.putAll(details);
+        }
+
+        return map;
+    }
+
     // Getters
     public Instant getTimestamp() { return timestamp; }
     public String getTraceId() { return traceId; }
