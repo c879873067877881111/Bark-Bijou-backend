@@ -315,24 +315,44 @@ scrape_configs:
 
 ### ELK Stack 日誌收集
 
+ELK 服務已整合在 `docker-compose.yml`（Elasticsearch、Kibana、Filebeat）。
+Filebeat 設定檔位於專案根目錄 `filebeat.yml`。
+
+**啟動 ELK：**
+```bash
+docker compose up -d elasticsearch kibana filebeat
+```
+
+**Filebeat 設定（`filebeat.yml`）：**
 ```yaml
-# filebeat.yml
 filebeat.inputs:
-- type: log
-  enabled: true
-  paths:
-    - /var/log/bark-bijou/*.log
-  fields:
-    service: bark-bijou-api
-  json.keys_under_root: true
+  - type: filestream
+    id: api-server-json
+    enabled: true
+    paths:
+      - /var/log/app/json/*.json
+    parsers:
+      - ndjson:
+          keys_under_root: true
+          overwrite_keys: true
+          add_error_key: true
+    fields:
+      service: api-server
+    fields_under_root: true
 
 output.elasticsearch:
   hosts: ["elasticsearch:9200"]
-  index: "bark-bijou-api-%{+yyyy.MM.dd}"
+  index: "api-server-%{+yyyy.MM.dd}"
 
-setup.template.name: "bark-bijou-api"
-setup.template.pattern: "bark-bijou-api-*"
+setup.ilm.enabled: false
+setup.template.name: "api-server"
+setup.template.pattern: "api-server-*"
 ```
+
+**驗證：**
+- Kibana 儀表板：`http://localhost:5601`
+- Elasticsearch：`http://localhost:9200/_cat/indices?v`
+- 日誌使用 LogstashEncoder 輸出結構化 JSON，審計欄位為 top-level fields，可直接查詢
 
 ## 安全配置
 

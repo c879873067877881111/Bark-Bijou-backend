@@ -72,6 +72,34 @@ public class AuditEvent {
         return sb.toString();
     }
 
+    /**
+     * 轉換為 Map，供 LogstashEncoder + StructuredArguments 使用
+     * 欄位會成為 JSON top-level fields，可直接在 Elasticsearch 查詢
+     */
+    public Map<String, Object> toJsonMap() {
+        Map<String, Object> map = new HashMap<>();
+
+        // details 先放，讓保留欄位覆蓋 details 中的同名 key
+        if (details != null && !details.isEmpty()) {
+            map.putAll(details);
+        }
+
+        map.put("audit_event", true);
+        map.put("action", action.name());
+        map.put("result", result.name());
+
+        if (userId != null) map.put("user_id", userId);
+        if (username != null) map.put("username", username);
+        if (clientIp != null) map.put("client_ip", clientIp);
+        if (resource != null) map.put("resource", resource);
+        if (resourceId != null) map.put("resource_id", resourceId);
+        if (description != null) map.put("desc", description);
+        if (duration != null) map.put("duration_ms", duration);
+        // traceId 由 MDC 自動提供，不需重複設定
+
+        return map;
+    }
+
     // Getters
     public Instant getTimestamp() { return timestamp; }
     public String getTraceId() { return traceId; }
