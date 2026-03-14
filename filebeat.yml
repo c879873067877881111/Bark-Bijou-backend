@@ -1,0 +1,19 @@
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/app/json/*.json
+    json.keys_under_root: true
+    json.overwrite_keys: true
+    json.add_error_key: true
+    fields:
+      service: api-server
+    fields_under_root: true
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  index: "api-server-%{+yyyy.MM.dd}"
+
+setup.ilm.enabled: false
+setup.template.name: "api-server"
+setup.template.pattern: "api-server-*"
