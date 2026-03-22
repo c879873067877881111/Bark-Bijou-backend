@@ -26,7 +26,11 @@ public class MemberServiceImpl implements MemberService {
         if (realname != null) user.setRealname(realname);
         if (email != null && !email.isBlank()) user.setEmail(email);
         if (gender != null) {
-            try { user.setGender(User.Gender.valueOf(gender)); } catch (Exception ignored) {}
+            try {
+                user.setGender(User.Gender.valueOf(gender));
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException(ResponseCode.BAD_REQUEST, "性別值不合法，允許值: male, female");
+            }
         }
         if (phone != null) user.setPhone(phone);
         if (birthDate != null && !birthDate.isEmpty()) {
