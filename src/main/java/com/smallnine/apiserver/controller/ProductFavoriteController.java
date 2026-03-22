@@ -1,11 +1,14 @@
 package com.smallnine.apiserver.controller;
 
+import com.smallnine.apiserver.dto.ApiResponse;
+import com.smallnine.apiserver.dto.FavoriteRequest;
 import com.smallnine.apiserver.entity.Favorite;
 import com.smallnine.apiserver.entity.User;
 import com.smallnine.apiserver.service.ProductFavoriteService;
 import com.smallnine.apiserver.utils.AuthUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,31 +28,31 @@ public class ProductFavoriteController {
 
     @Operation(summary = "取得我的收藏列表")
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getMyFavorites(
+    public ResponseEntity<ApiResponse<List<Favorite>>> getMyFavorites(
             @AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) {
-            return ResponseEntity.ok(Map.of("data", List.of()));
+            return ResponseEntity.ok(ApiResponse.success(List.of()));
         }
         User user = AuthUtils.getAuthenticatedUser(userDetails);
         List<Favorite> favorites = productFavoriteService.getByMemberId(user.getId());
-        return ResponseEntity.ok(Map.of("data", favorites));
+        return ResponseEntity.ok(ApiResponse.success(favorites));
     }
 
     @Operation(summary = "切換收藏狀態")
     @PostMapping
-    public ResponseEntity<Map<String, Object>> toggleFavorite(
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> toggleFavorite(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, Object> body) {
+            @Valid @RequestBody FavoriteRequest request) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
-        Long productId = Long.valueOf(body.get("productId").toString());
+        Long productId = request.getProductId();
 
         boolean isFavorite = productFavoriteService.isFavorite(user.getId(), productId);
         if (isFavorite) {
             productFavoriteService.remove(user.getId(), productId);
-            return ResponseEntity.ok(Map.of("favorite", false));
+            return ResponseEntity.ok(ApiResponse.success(Map.of("favorite", false)));
         } else {
             productFavoriteService.add(user.getId(), productId);
-            return ResponseEntity.ok(Map.of("favorite", true));
+            return ResponseEntity.ok(ApiResponse.success(Map.of("favorite", true)));
         }
     }
 }

@@ -1,12 +1,15 @@
 package com.smallnine.apiserver.controller;
 
 import com.smallnine.apiserver.dao.OrderItemDao;
+import com.smallnine.apiserver.dto.ApiResponse;
+import com.smallnine.apiserver.dto.ReviewRequest;
 import com.smallnine.apiserver.entity.Review;
 import com.smallnine.apiserver.entity.User;
 import com.smallnine.apiserver.service.ProductReviewService;
 import com.smallnine.apiserver.utils.AuthUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,7 +30,7 @@ public class ProductReviewController {
 
     @Operation(summary = "檢查是否可評價")
     @GetMapping("/{productId}/check")
-    public ResponseEntity<Map<String, Object>> checkReview(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> checkReview(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long productId) {
         Map<String, Object> data = new LinkedHashMap<>();
@@ -53,28 +56,24 @@ public class ProductReviewController {
             }
         }
 
-        return ResponseEntity.ok(Map.of("data", data));
+        return ResponseEntity.ok(ApiResponse.success(data));
     }
 
     @Operation(summary = "新增評價")
     @PostMapping
-    public ResponseEntity<Map<String, Object>> addReview(
+    public ResponseEntity<ApiResponse<Review>> addReview(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, Object> body) {
+            @Valid @RequestBody ReviewRequest request) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
 
-        Long productId = Long.valueOf(body.get("productId").toString());
-        Integer rating = Integer.valueOf(body.get("rating").toString());
-        String comment = body.get("comment") != null ? body.get("comment").toString() : "";
-
         Review review = new Review();
-        review.setProductId(productId);
+        review.setProductId(request.getProductId());
         review.setMemberId(user.getId());
-        review.setRating(rating);
-        review.setContent(comment);
-        review.setIsVerifiedPurchase(orderItemDao.existsByMemberIdAndProductId(user.getId(), productId));
+        review.setRating(request.getRating());
+        review.setContent(request.getContent() != null ? request.getContent() : "");
+        review.setIsVerifiedPurchase(orderItemDao.existsByMemberIdAndProductId(user.getId(), request.getProductId()));
 
         Review created = productReviewService.add(review);
-        return ResponseEntity.ok(Map.of("message", "評價成功", "review", created));
+        return ResponseEntity.ok(ApiResponse.success("評價成功", created));
     }
 }

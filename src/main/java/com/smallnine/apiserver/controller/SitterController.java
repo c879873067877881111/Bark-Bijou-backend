@@ -95,11 +95,9 @@ public class SitterController {
     public ResponseEntity<ApiResponse<Void>> addReview(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, Object> body) {
+            @Valid @RequestBody ReviewRequest request) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
-        Integer rating = (Integer) body.get("rating");
-        String comment = (String) body.get("comment");
-        sitterService.addReview(id, rating, comment, user.getId());
+        sitterService.addReview(id, request.getRating(), request.getContent(), user.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("評論提交成功"));
     }

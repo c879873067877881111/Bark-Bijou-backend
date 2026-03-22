@@ -1,6 +1,7 @@
 package com.smallnine.apiserver.controller;
 
 import com.smallnine.apiserver.dto.ApiResponse;
+import com.smallnine.apiserver.dto.DogRequest;
 import com.smallnine.apiserver.dto.SitterBookingRequest;
 import com.smallnine.apiserver.entity.Dog;
 import com.smallnine.apiserver.entity.SitterBooking;
@@ -33,38 +34,24 @@ public class SitterBookingController {
     private final DogDao dogDao;
 
     @GetMapping("/dogs")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getMyDogs(
+    public ResponseEntity<ApiResponse<List<Dog>>> getMyDogs(
             @AuthenticationPrincipal UserDetails userDetails) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
         List<Dog> dogs = dogService.getMyDogs(user.getId());
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        if (dogs.isEmpty()) {
-            result.put("status", "empty");
-            result.put("dogs", List.of());
-        } else {
-            result.put("status", "success");
-            result.put("dogs", dogs);
-        }
-        return ResponseEntity.ok(ApiResponse.success(result));
+        return ResponseEntity.ok(ApiResponse.success(dogs));
     }
 
     @PostMapping("/dogs")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> addDog(
+    public ResponseEntity<ApiResponse<Dog>> addDog(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> body) {
+            @Valid @RequestBody DogRequest request) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
-        String name = body.get("name");
         Dog dog = new Dog();
         dog.setMemberId(user.getId());
-        dog.setName(name);
+        dog.setName(request.getName());
         dog = dogService.addDog(dog);
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", "success");
-        result.put("dog", dog);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("新增狗狗成功", result));
+                .body(ApiResponse.success("新增狗狗成功", dog));
     }
 
     @PostMapping("/{sitterId}/bookings")
@@ -87,10 +74,7 @@ public class SitterBookingController {
         bookingData.put("start_date", request.getStartDate());
         bookingData.put("end_date", request.getEndDate());
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", "success");
-        result.put("booking", bookingData);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("預約成功", result));
+                .body(ApiResponse.success("預約成功", bookingData));
     }
 }
