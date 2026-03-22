@@ -1,18 +1,15 @@
 package com.smallnine.apiserver.controller;
 
-import com.smallnine.apiserver.dao.UserDao;
 import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.entity.User;
-import com.smallnine.apiserver.service.FileStorageService;
+import com.smallnine.apiserver.service.MemberService;
 import com.smallnine.apiserver.utils.AuthUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,13 +18,10 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@Slf4j
 @Tag(name = "會員資料", description = "會員個人資料管理 API")
 public class MemberController {
 
-    private final UserDao userDao;
-    private final PasswordEncoder passwordEncoder;
-    private final FileStorageService fileStorageService;
+    private final MemberService memberService;
 
     @Operation(summary = "更新會員資料 (FormData)")
     @PutMapping("/api/member/profile/edit")
@@ -42,29 +36,11 @@ public class MemberController {
             @RequestParam(required = false) MultipartFile avatar) {
 
         User user = AuthUtils.getAuthenticatedUser(userDetails);
-
-        if (username != null && !username.isBlank()) user.setUsername(username);
-        if (realname != null) user.setRealname(realname);
-        if (email != null && !email.isBlank()) user.setEmail(email);
-        if (gender != null) {
-            try { user.setGender(User.Gender.valueOf(gender)); } catch (Exception ignored) {}
-        }
-        if (phone != null) user.setPhone(phone);
-        if (birth_date != null && !birth_date.isEmpty()) {
-            user.setBirthDate(java.time.LocalDate.parse(birth_date));
-        }
-
-        if (avatar != null && !avatar.isEmpty()) {
-            String storedPath = fileStorageService.store(avatar, "member_images");
-            String filename = storedPath.substring(storedPath.lastIndexOf('/') + 1);
-            user.setImageUrl("/member/member_images/" + filename);
-        }
-
-        userDao.updateProfile(user);
+        String imageUrl = memberService.updateProfile(user, username, realname, email, birth_date, gender, phone, avatar);
 
         Map<String, Object> data = new LinkedHashMap<>();
-        if (user.getImageUrl() != null) {
-            data.put("image_url", user.getImageUrl());
+        if (imageUrl != null) {
+            data.put("image_url", imageUrl);
         }
         return ResponseEntity.ok(ApiResponse.success("更新成功", data));
     }
@@ -78,19 +54,7 @@ public class MemberController {
             @RequestParam String newPassword) {
 
         User authenticatedUser = AuthUtils.getAuthenticatedUser(userDetails);
-        if (!authenticatedUser.getId().equals(memberId)) {
-            return ResponseEntity.status(403).body(ApiResponse.error("無權限修改他人密碼"));
-        }
-
-        if (!passwordEncoder.matches(currentPassword, authenticatedUser.getPassword())) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("舊密碼錯誤"));
-        }
-
-        if (newPassword.length() < 6) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("新密碼長度至少6位"));
-        }
-
-        userDao.updatePassword(memberId, passwordEncoder.encode(newPassword));
+        memberService.changePassword(memberId, authenticatedUser.getId(), currentPassword, newPassword);
         return ResponseEntity.ok(ApiResponse.success("密碼修改成功"));
     }
 }
