@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
 @RestController
 @RequestMapping("/api/member/signup")
 @RequiredArgsConstructor
