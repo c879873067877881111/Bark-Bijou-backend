@@ -1,6 +1,7 @@
 package com.smallnine.apiserver.controller;
 
 import com.smallnine.apiserver.dao.UserDao;
+import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.entity.User;
 import com.smallnine.apiserver.service.FileStorageService;
 import com.smallnine.apiserver.utils.AuthUtils;
@@ -30,7 +31,7 @@ public class MemberController {
 
     @Operation(summary = "更新會員資料 (FormData)")
     @PutMapping("/api/member/profile/edit")
-    public ResponseEntity<Map<String, Object>> updateProfile(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> updateProfile(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String realname,
@@ -55,24 +56,22 @@ public class MemberController {
 
         if (avatar != null && !avatar.isEmpty()) {
             String storedPath = fileStorageService.store(avatar, "member_images");
-            // 保持舊 URL 格式以維護向後兼容性
             String filename = storedPath.substring(storedPath.lastIndexOf('/') + 1);
             user.setImageUrl("/member/member_images/" + filename);
         }
 
         userDao.updateProfile(user);
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("message", "更新成功");
+        Map<String, Object> data = new LinkedHashMap<>();
         if (user.getImageUrl() != null) {
-            result.put("image_url", user.getImageUrl());
+            data.put("image_url", user.getImageUrl());
         }
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success("更新成功", data));
     }
 
     @Operation(summary = "修改密碼 (URLSearchParams)")
     @PutMapping("/api/member/profile/{memberId}/password")
-    public ResponseEntity<Map<String, Object>> changePassword(
+    public ResponseEntity<ApiResponse<Void>> changePassword(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long memberId,
             @RequestParam String currentPassword,
@@ -80,18 +79,18 @@ public class MemberController {
 
         User authenticatedUser = AuthUtils.getAuthenticatedUser(userDetails);
         if (!authenticatedUser.getId().equals(memberId)) {
-            return ResponseEntity.status(403).body(Map.of("message", "無權限修改他人密碼"));
+            return ResponseEntity.status(403).body(ApiResponse.error("無權限修改他人密碼"));
         }
 
         if (!passwordEncoder.matches(currentPassword, authenticatedUser.getPassword())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "舊密碼錯誤"));
+            return ResponseEntity.badRequest().body(ApiResponse.error("舊密碼錯誤"));
         }
 
         if (newPassword.length() < 6) {
-            return ResponseEntity.badRequest().body(Map.of("message", "新密碼長度至少6位"));
+            return ResponseEntity.badRequest().body(ApiResponse.error("新密碼長度至少6位"));
         }
 
         userDao.updatePassword(memberId, passwordEncoder.encode(newPassword));
-        return ResponseEntity.ok(Map.of("message", "密碼修改成功"));
+        return ResponseEntity.ok(ApiResponse.success("密碼修改成功"));
     }
 }
