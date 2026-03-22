@@ -1,5 +1,6 @@
 package com.smallnine.apiserver.controller;
 
+import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.entity.User;
 import com.smallnine.apiserver.service.MemberService;
 import com.smallnine.apiserver.utils.AuthUtils;
@@ -24,7 +25,7 @@ public class MemberController {
 
     @Operation(summary = "更新會員資料 (FormData)")
     @PutMapping("/api/member/profile/edit")
-    public ResponseEntity<Map<String, Object>> updateProfile(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> updateProfile(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String realname,
@@ -37,17 +38,16 @@ public class MemberController {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
         String imageUrl = memberService.updateProfile(user, username, realname, email, birth_date, gender, phone, avatar);
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("message", "更新成功");
+        Map<String, Object> data = new LinkedHashMap<>();
         if (imageUrl != null) {
-            result.put("image_url", imageUrl);
+            data.put("image_url", imageUrl);
         }
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success("更新成功", data));
     }
 
     @Operation(summary = "修改密碼 (URLSearchParams)")
     @PutMapping("/api/member/profile/{memberId}/password")
-    public ResponseEntity<Map<String, Object>> changePassword(
+    public ResponseEntity<ApiResponse<Void>> changePassword(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long memberId,
             @RequestParam String currentPassword,
@@ -55,6 +55,6 @@ public class MemberController {
 
         User authenticatedUser = AuthUtils.getAuthenticatedUser(userDetails);
         memberService.changePassword(memberId, authenticatedUser.getId(), currentPassword, newPassword);
-        return ResponseEntity.ok(Map.of("message", "密碼修改成功"));
+        return ResponseEntity.ok(ApiResponse.success("密碼修改成功"));
     }
 }

@@ -28,25 +28,20 @@ public class CouponController {
 
     private final CouponService couponService;
 
-    @Operation(summary = "取得所有可用優惠券 (支持 memberId 參數)")
+    @Operation(summary = "取得所有可用優惠券")
     @GetMapping("/coupons")
-    public ResponseEntity<?> getAllCoupons(
-            @RequestParam(required = false) Long memberId) {
+    public ResponseEntity<ApiResponse<List<Coupon>>> getAllCoupons() {
         List<Coupon> coupons = couponService.getAllActive();
-        if (memberId != null) {
-            // Return as array for order page compatibility
-            return ResponseEntity.ok(coupons);
-        }
-        return ResponseEntity.ok(ApiResponse.success(Map.of("coupons", coupons)));
+        return ResponseEntity.ok(ApiResponse.success(coupons));
     }
 
     @Operation(summary = "取得單一優惠券 (含 isClaimed)")
     @GetMapping("/coupons/{id}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getCoupon(
+    public ResponseEntity<ApiResponse<CouponResponse>> getCoupon(
             @PathVariable Long id,
             @RequestParam(required = false) Long memberId) {
         CouponResponse coupon = couponService.getById(id, memberId);
-        return ResponseEntity.ok(ApiResponse.success(Map.of("coupon", coupon)));
+        return ResponseEntity.ok(ApiResponse.success(coupon));
     }
 
     @Operation(summary = "領取優惠券")
@@ -61,12 +56,12 @@ public class CouponController {
 
     @Operation(summary = "取得會員優惠券 (依類型)")
     @GetMapping("/members/me/coupons/{type}")
-    public ResponseEntity<Map<String, Object>> getMemberCouponsByType(
+    public ResponseEntity<ApiResponse<List<MemberCoupon>>> getMemberCouponsByType(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String type) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
         List<MemberCoupon> coupons = couponService.getMemberCoupons(user.getId());
-        return ResponseEntity.ok(Map.of("data", Map.of("coupons", coupons)));
+        return ResponseEntity.ok(ApiResponse.success(coupons));
     }
 
     @Operation(summary = "取得會員已領取的優惠券")

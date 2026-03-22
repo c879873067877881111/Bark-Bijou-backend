@@ -45,6 +45,9 @@ public class UserResponse {
     @Schema(description = "頭像URL", example = "/member/member_images/user-img.svg")
     private String imageUrl;
 
+    @Schema(description = "角色", example = "USER")
+    private User.Role role;
+
     @Schema(description = "信箱是否已驗證", example = "false")
     private Boolean emailValidated;
 
@@ -64,6 +67,7 @@ public class UserResponse {
         this.birthDate = user.getBirthDate();
         this.vipLevelsId = user.getVipLevelsId();
         this.imageUrl = user.getImageUrl();
+        this.role = user.getRole();
         this.emailValidated = user.getEmailValidated();
         this.createdAt = user.getCreatedAt();
         this.updatedAt = user.getUpdatedAt();

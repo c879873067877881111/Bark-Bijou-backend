@@ -1,5 +1,6 @@
 package com.smallnine.apiserver.controller;
 
+import com.smallnine.apiserver.dto.ApiResponse;
 import com.smallnine.apiserver.entity.Dog;
 import com.smallnine.apiserver.entity.User;
 import com.smallnine.apiserver.service.DogService;
@@ -14,9 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/member/dogs")
@@ -29,19 +28,19 @@ public class MemberDogController {
 
     @Operation(summary = "取得我的寵物列表")
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getMyDogs(
+    public ResponseEntity<ApiResponse<List<Dog>>> getMyDogs(
             @AuthenticationPrincipal UserDetails userDetails) {
         if (userDetails == null) {
-            return ResponseEntity.ok(Map.of("data", List.of()));
+            return ResponseEntity.ok(ApiResponse.success(List.of()));
         }
         User user = AuthUtils.getAuthenticatedUser(userDetails);
         List<Dog> dogs = dogService.getMyDogs(user.getId());
-        return ResponseEntity.ok(Map.of("data", dogs));
+        return ResponseEntity.ok(ApiResponse.success(dogs));
     }
 
     @Operation(summary = "新增寵物 (FormData)")
     @PostMapping("/add")
-    public ResponseEntity<Map<String, Object>> addDog(
+    public ResponseEntity<ApiResponse<Dog>> addDog(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam String name,
             @RequestParam(required = false) String age,
@@ -75,24 +74,16 @@ public class MemberDogController {
         }
 
         Dog created = dogService.addDog(dog);
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", "success");
-        result.put("message", "新增狗狗成功");
-        result.put("dog", created);
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success("新增狗狗成功", created));
     }
 
     @Operation(summary = "刪除寵物")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> deleteDog(
+    public ResponseEntity<ApiResponse<Void>> deleteDog(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long id) {
         User user = AuthUtils.getAuthenticatedUser(userDetails);
         dogService.deleteDog(id, user.getId());
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("status", "success");
-        result.put("message", "刪除成功");
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(ApiResponse.success("刪除成功"));
     }
 }
