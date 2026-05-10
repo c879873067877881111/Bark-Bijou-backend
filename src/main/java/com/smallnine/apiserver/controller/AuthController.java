@@ -1,6 +1,7 @@
 package com.smallnine.apiserver.controller;
 
 import com.smallnine.apiserver.dto.*;
+import com.smallnine.apiserver.security.oauth2.OAuth2ExchangeService;
 import com.smallnine.apiserver.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     
     private final AuthService authService;
+    private final OAuth2ExchangeService oAuth2ExchangeService;
     
     @Operation(summary = "用戶註冊", description = "註冊新用戶帳號")
     @ApiResponses(value = {
@@ -99,6 +101,18 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> verifyEmail(@RequestParam String token) {
         authService.verifyEmail(token);
         return ResponseEntity.ok(ApiResponse.success("郵箱驗證成功，現在可以登入"));
+    }
+
+    @Operation(summary = "OAuth2 一次性 code 換 token",
+            description = "Google 登入成功後，前端從 redirect URL 取得 code，再呼叫此端點換取 access/refresh token。code 為一次性，60 秒內有效。")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "兌換成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "code 無效或已過期")
+    })
+    @PostMapping("/oauth/exchange")
+    public ResponseEntity<ApiResponse<AuthResponse>> exchangeOAuth2Code(@Valid @RequestBody OAuth2ExchangeRequest request) {
+        AuthResponse authResponse = oAuth2ExchangeService.exchange(request.getCode());
+        return ResponseEntity.ok(ApiResponse.success("登入成功", authResponse));
     }
 
     @Operation(summary = "重新發送驗證郵件", description = "重新發送郵箱驗證郵件")
