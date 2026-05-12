@@ -103,7 +103,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String accessToken = jwtUtil.generateAccessToken(user.getUsername());
-        RefreshToken refreshTokenEntity = refreshTokenService.createRefreshToken(user);
+        // login 不踢其他裝置:傳 null 表示不撤銷既有 refresh token
+        RefreshToken refreshTokenEntity = refreshTokenService.createRefreshToken(user, null);
         LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(jwtUtil.getAccessTokenExpirationTime() / 1000);
 
         // 設置用戶上下文（後續日誌會自動帶上 userId）
@@ -134,13 +135,11 @@ public class AuthServiceImpl implements AuthService {
                             .orElseThrow(() -> new ResourceNotFoundException("用戶", userId));
                     
                     String newAccessToken = jwtUtil.generateAccessToken(user.getUsername());
-                    RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);
+                    // Refresh rotation:撤銷剛用掉的這顆 + 發新顆,其他裝置 session 不動
+                    RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user, requestRefreshToken);
                     LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(jwtUtil.getAccessTokenExpirationTime() / 1000);
-                    
-                    // 撤銷舊的更新令牌
-                    refreshTokenService.revokeByToken(requestRefreshToken);
-                    
-                    log.info("action=refresh_token username={} user_id={} result=success", 
+
+                    log.info("action=refresh_token username={} user_id={} result=success",
                             user.getUsername(), user.getId());
                     return new AuthResponse(newAccessToken, newRefreshToken.getToken(), user, expiresAt);
                 })

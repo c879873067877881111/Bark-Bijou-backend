@@ -63,7 +63,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             User user = resolveUser(profile);
 
             String accessToken = jwtUtil.generateAccessToken(user.getUsername());
-            RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(user, null);
             long accessExpiresAt = System.currentTimeMillis() + jwtUtil.getAccessTokenExpirationTime();
 
             String code = codeStore.issue(user.getId(), accessToken, refreshToken.getToken(), accessExpiresAt);

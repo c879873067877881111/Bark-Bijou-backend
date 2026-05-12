@@ -97,7 +97,7 @@ public class MemberSignupController {
         otpService.cleanup(request.getEmail());
 
         String accessToken = jwtUtil.generateAccessToken(user.getUsername());
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user, null);
         LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(jwtUtil.getAccessTokenExpirationTime() / 1000);
 
         Map<String, Object> authData = new LinkedHashMap<>();

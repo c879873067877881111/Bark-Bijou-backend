@@ -25,19 +25,23 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     
     @Override
     @Transactional
-    public RefreshToken createRefreshToken(User user) {
-        // 先撤銷該用戶現有的 refresh token
-        revokeByUser(user);
-        
+    public RefreshToken createRefreshToken(User user, String rotateFromToken) {
+        // Token rotation:只撤銷指定的那一顆(refresh 流程的舊 token);
+        // login / register / OAuth 傳 null 即不撤銷,保留其他裝置 session。
+        if (rotateFromToken != null) {
+            refreshTokenDao.revokeByToken(rotateFromToken);
+        }
+
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUserId(user.getId());
         refreshToken.setToken(UUID.randomUUID().toString());
         refreshToken.setExpiryDate(LocalDateTime.now().plusSeconds(jwtUtil.getRefreshTokenExpirationTime() / 1000));
         refreshToken.setRevoked(false);
-        
+
         refreshTokenDao.save(refreshToken);
-        log.info("為用戶 {} 創建新的 refresh token", user.getUsername());
-        
+        log.info("action=refresh_token_create username={} rotated={}",
+                user.getUsername(), rotateFromToken != null);
+
         return refreshToken;
     }
     
