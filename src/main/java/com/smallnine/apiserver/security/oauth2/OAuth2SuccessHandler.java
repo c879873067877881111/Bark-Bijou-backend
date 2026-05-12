@@ -42,6 +42,11 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     @Value("${app.oauth2.redirect-uri}")
     private String redirectUri;
 
+    // OAuth2 失敗時導去前端的錯誤頁路徑(可設定,預設 /login;
+    // 若前端 login route 是 /member/login 之類就改 properties 對齊)
+    @Value("${app.oauth2.error-redirect-path:/login}")
+    private String errorRedirectPath;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
@@ -86,7 +91,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private void redirectToLoginError(HttpServletResponse response, String message) throws IOException {
         URI uri = URI.create(redirectUri);
         String errorRedirect = uri.getScheme() + "://" + uri.getAuthority()
-                + "/login?error=" + URLEncoder.encode(message, StandardCharsets.UTF_8);
+                + errorRedirectPath
+                + "?error=" + URLEncoder.encode(message, StandardCharsets.UTF_8);
         response.sendRedirect(errorRedirect);
     }
 
