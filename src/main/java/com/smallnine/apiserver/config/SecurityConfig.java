@@ -62,8 +62,6 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .oauth2Login(oauth2 -> oauth2
-                .authorizationEndpoint(auth -> auth.baseUri("/oauth2/authorize"))
-                .redirectionEndpoint(redir -> redir.baseUri("/oauth2/callback/*"))
                 .successHandler(oAuth2AuthenticationSuccessHandler)
                 .failureHandler(oAuth2AuthenticationFailureHandler)
             )
@@ -88,7 +86,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 // 認證相關（只開登入/註冊/刷新）
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh",
-                        "/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
+                        "/api/auth/verify-email", "/api/auth/resend-verification",
+                        "/api/auth/oauth/exchange").permitAll()
 
                 // Swagger
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/docs/**", "/v3/api-docs/**").permitAll()

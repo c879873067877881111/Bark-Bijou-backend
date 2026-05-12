@@ -83,11 +83,15 @@
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO member (
             role, username, email, password, realname, phone, gender,
-            vip_levels_id, image_url, email_validated, reset_token, reset_token_expiry,
+            vip_levels_id, image_url, email_validated,
+            google_uid, google_name,
+            reset_token, reset_token_expiry,
             created_at, updated_at
         ) VALUES (
             #{role}, #{username}, #{email}, #{password}, #{realname}, #{phone}, #{gender},
-            #{vipLevelsId}, #{imageUrl}, #{emailValidated}, #{resetToken}, #{resetTokenExpiry},
+            #{vipLevelsId}, #{imageUrl}, #{emailValidated},
+            #{googleUid}, #{googleName},
+            #{resetToken}, #{resetTokenExpiry},
             NOW(), NOW()
         )
     </insert>
@@ -103,6 +107,8 @@
             vip_levels_id = #{vipLevelsId},
             image_url = #{imageUrl},
             email_validated = #{emailValidated},
+            google_uid = #{googleUid},
+            google_name = #{googleName},
             reset_token = #{resetToken},
             reset_token_expiry = #{resetTokenExpiry},
             updated_at = NOW()
