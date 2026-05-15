@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -195,6 +197,26 @@ class OrderServiceTest {
 
         Order stillShipped = orderDao.findById(pendingOrderId).orElseThrow();
         assertEquals(OrderStatus.SHIPPED.getId(), stillShipped.getStatusId(), "狀態不可被誤翻成已取消");
+    }
+
+    @Test
+    void cancellableStatusIds_isPendingAndConfirmed() {
+        // 鎖住單一真相來源內容，狀態機被誤改時這裡先紅
+        List<Long> ids = OrderStatus.cancellableStatusIds();
+        assertEquals(2, ids.size());
+        assertTrue(ids.contains(OrderStatus.PENDING.getId()));
+        assertTrue(ids.contains(OrderStatus.CONFIRMED.getId()));
+    }
+
+    @Test
+    void cancelIfCancellable_emptyFromStatusIds_updatesZeroRows() {
+        // 空集合防禦：絕不可退化成只用 id 更新任意狀態
+        int affected = orderDao.cancelIfCancellable(
+                pendingOrderId, OrderStatus.CANCELLED.getId(), new ArrayList<>());
+        assertEquals(0, affected, "空可取消集合 CAS 應更新到 0 行");
+
+        Order stillPending = orderDao.findById(pendingOrderId).orElseThrow();
+        assertEquals(OrderStatus.PENDING.getId(), stillPending.getStatusId(), "空集合不可誤翻狀態");
     }
 
     // ── 從購物車建立訂單 ──

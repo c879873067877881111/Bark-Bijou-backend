@@ -138,10 +138,18 @@
             status_id = #{cancelledStatusId},
             updated_at = NOW()
         WHERE id = #{id}
-          AND status_id IN
-        <foreach item="sid" collection="fromStatusIds" open="(" separator="," close=")">
-            #{sid}
-        </foreach>
+        <choose>
+            <when test="fromStatusIds != null and !fromStatusIds.isEmpty()">
+                AND status_id IN
+                <foreach item="sid" collection="fromStatusIds" open="(" separator="," close=")">
+                    #{sid}
+                </foreach>
+            </when>
+            <!-- 空集合：沒有任何狀態可取消，強制 0 行（不可退化成只用 id 更新任意狀態） -->
+            <otherwise>
+                AND 1 = 0
+            </otherwise>
+        </choose>
     </update>
 
     <!-- 根據ID刪除訂單 -->
