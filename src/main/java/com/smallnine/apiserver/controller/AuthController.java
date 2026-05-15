@@ -1,12 +1,16 @@
 package com.smallnine.apiserver.controller;
 
+import com.smallnine.apiserver.constants.enums.ResponseCode;
 import com.smallnine.apiserver.dto.*;
+import com.smallnine.apiserver.exception.BusinessException;
 import com.smallnine.apiserver.security.oauth2.OAuth2ExchangeService;
 import com.smallnine.apiserver.service.AuthService;
+import com.smallnine.apiserver.service.RateLimiterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,6 +27,7 @@ public class AuthController {
     
     private final AuthService authService;
     private final OAuth2ExchangeService oAuth2ExchangeService;
+    private final RateLimiterService rateLimiterService;
     
     @Operation(summary = "用戶註冊", description = "註冊新用戶帳號")
     @ApiResponses(value = {
@@ -115,14 +120,29 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("登入成功", authResponse));
     }
 
-    @Operation(summary = "重新發送驗證郵件", description = "重新發送郵箱驗證郵件")
+    @Operation(summary = "重新發送驗證郵件", description = "重新發送郵箱驗證郵件；為防帳號枚舉，無論信箱是否存在皆回固定訊息")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "驗證郵件已發送"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "郵箱已驗證或用戶不存在")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "已受理（不洩漏信箱是否存在）"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "請求過於頻繁")
     })
     @PostMapping("/resend-verification")
-    public ResponseEntity<ApiResponse<String>> resendVerification(@RequestParam String email) {
+    public ResponseEntity<ApiResponse<String>> resendVerification(@RequestParam String email,
+                                                                  HttpServletRequest request) {
+        // #H1 限流：email 與 IP 任一超限即擋，避免 email 炸彈 / 整段 IP 掃信箱
+        if (!rateLimiterService.tryResendVerification(email, clientIp(request))) {
+            throw new BusinessException(ResponseCode.TOO_MANY_REQUESTS);
+        }
+        // #H1 防枚舉：service 對「不存在 / 已驗證」靜默處理，這裡一律回固定訊息
         authService.resendVerificationEmail(email);
-        return ResponseEntity.ok(ApiResponse.success("驗證郵件已發送，請查收"));
+        return ResponseEntity.ok(ApiResponse.success("若該信箱已註冊且尚未驗證，我們已寄出驗證信"));
+    }
+
+    /** 取用戶端 IP：優先 X-Forwarded-For 第一段（反向代理後），否則 remoteAddr */
+    private String clientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }
