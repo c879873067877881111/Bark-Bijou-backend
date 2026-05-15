@@ -190,11 +190,17 @@ public class AuthServiceImpl implements AuthService {
     public void resendVerificationEmail(String email) {
         log.info("action=resend_verification email={} result=attempt", email);
 
-        User user = userDao.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("用戶", email));
+        // #H1 防帳號枚舉：不存在或已驗證一律靜默結束，由 controller 回固定訊息，
+        // 不向呼叫端洩漏該信箱是否註冊 / 是否已驗證
+        User user = userDao.findByEmail(email).orElse(null);
+        if (user == null) {
+            log.warn("action=resend_verification email={} result=failure reason=user_not_found", email);
+            return;
+        }
 
         if (user.getEmailValidated()) {
-            throw new BusinessException(ResponseCode.BAD_REQUEST, "該郵箱已驗證");
+            log.warn("action=resend_verification email={} result=failure reason=already_validated", email);
+            return;
         }
 
         String verificationToken = generateSecureToken();
@@ -203,6 +209,7 @@ public class AuthServiceImpl implements AuthService {
         userDao.update(user);
 
         mailService.sendVerificationEmail(user.getEmail(), verificationToken);
+        log.info("action=resend_verification email={} result=success", email);
     }
 
     private String generateSecureToken() {

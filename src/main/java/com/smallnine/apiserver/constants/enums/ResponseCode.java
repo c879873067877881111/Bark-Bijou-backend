@@ -13,6 +13,7 @@ public enum ResponseCode {
     FORBIDDEN(403, "禁止訪問", HttpStatus.FORBIDDEN),
     NOT_FOUND(404, "資源不存在", HttpStatus.NOT_FOUND),
     CONFLICT(409, "資源衝突", HttpStatus.CONFLICT),
+    TOO_MANY_REQUESTS(429, "請求過於頻繁，請稍後再試", HttpStatus.TOO_MANY_REQUESTS),
     INTERNAL_SERVER_ERROR(500, "內部伺服器錯誤", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 業務例外 - 用戶相關
