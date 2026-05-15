@@ -18,7 +18,7 @@ import java.util.Locale;
  *  - expireAfterAccess 設為各自的補滿視窗：閒置滿一個視窗的 entry 即使被淘汰，
  *    重建也是滿桶——反正它本來就已被 refill 補滿，語意安全；maximumSize 則是硬上限
  *
- * 僅適用單機；多機 / 分散式登流（登入端點）留待 #H2 改 Redis-backed。
+ * 僅適用單機；多機 / 分散式限流（登入端點）留待 #H2 改 Redis-backed。
  * 此處故意只覆蓋 resend-verification 一條路徑，不做過度設計。
  */
 @Service
