@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +42,7 @@ public class SitterBookingController {
         return ResponseEntity.ok(ApiResponse.success(dogs));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/dogs")
     public ResponseEntity<ApiResponse<Dog>> addDog(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -54,6 +56,7 @@ public class SitterBookingController {
                 .body(ApiResponse.success("新增狗狗成功", dog));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/{sitterId}/bookings")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createBooking(
             @PathVariable Long sitterId,

@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -62,6 +63,7 @@ public class SitterController {
         return ResponseEntity.ok(ApiResponse.success(sitter));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping
     public ResponseEntity<ApiResponse<Sitter>> createSitter(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -72,6 +74,7 @@ public class SitterController {
                 .body(ApiResponse.success("保母新增成功", sitter));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Sitter>> updateSitter(
             @PathVariable Long id,
@@ -82,6 +85,7 @@ public class SitterController {
         return ResponseEntity.ok(ApiResponse.success("保母資料已更新", sitter));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteSitter(
             @PathVariable Long id,
@@ -91,6 +95,7 @@ public class SitterController {
         return ResponseEntity.ok(ApiResponse.success("保母資料已刪除"));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/{id}/reviews")
     public ResponseEntity<ApiResponse<Void>> addReview(
             @PathVariable Long id,
