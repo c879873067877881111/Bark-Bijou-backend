@@ -45,6 +45,7 @@ class OrderServiceIdempotencyFinalizeTest {
     @Mock private RedisTemplate<String, Object> redisTemplate;
     @Mock private ObjectProvider<OrderService> selfProvider;
     @Mock private ValueOperations<String, Object> valueOps;
+    @Mock private OrderService selfBean;
 
     private OrderServiceImpl orderService;
 
@@ -74,7 +75,6 @@ class OrderServiceIdempotencyFinalizeTest {
         created.setId(999L);
 
         // selfProvider 回傳一個會建單成功的 proxy（模擬 DB 已 commit）
-        OrderService selfBean = org.mockito.Mockito.mock(OrderService.class);
         when(selfProvider.getObject()).thenReturn(selfBean);
         when(selfBean.createOrderFromCart(eq(MEMBER_ID), any(CreateOrderRequest.class)))
                 .thenReturn(created);
@@ -93,6 +93,35 @@ class OrderServiceIdempotencyFinalizeTest {
         assertEquals(999L, order.getId());
 
         // 關鍵：set 失敗後必須 delete(key)，不可把 key 留在 PENDING
+        verify(redisTemplate).delete(redisKey);
+    }
+
+    @Test
+    void redisFullyDown_setAndDeleteBothThrow_stillReturnsOrderNoException() {
+        String idempotencyKey = UUID.randomUUID().toString();
+        String redisKey = "order:idempotency:" + MEMBER_ID + ":" + idempotencyKey;
+
+        Order created = new Order();
+        created.setId(888L);
+
+        when(selfProvider.getObject()).thenReturn(selfBean);
+        when(selfBean.createOrderFromCart(eq(MEMBER_ID), any(CreateOrderRequest.class)))
+                .thenReturn(created);
+
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.setIfAbsent(eq(redisKey), eq("PENDING"), anyLong(), any(TimeUnit.class)))
+                .thenReturn(true);
+        // Redis 全掛：set 與收尾的 delete 都炸（最真實的相關性故障）
+        doThrow(new RuntimeException("redis down"))
+                .when(valueOps).set(eq(redisKey), anyString(), anyLong(), any(TimeUnit.class));
+        when(redisTemplate.delete(redisKey)).thenThrow(new RuntimeException("redis down"));
+
+        // 內層 catch 必須吞住 delete 例外，不可往外噴；訂單仍回傳（best-effort）
+        Order order = assertDoesNotThrow(() ->
+                orderService.createOrderFromCart(MEMBER_ID, buildRequest(), idempotencyKey));
+
+        assertNotNull(order);
+        assertEquals(888L, order.getId());
         verify(redisTemplate).delete(redisKey);
     }
 }
